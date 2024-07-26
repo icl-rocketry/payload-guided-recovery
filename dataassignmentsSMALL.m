@@ -41,6 +41,8 @@ h_ax = trim(:,12);
 h_ay = trim(:,13);
 h_az = trim(:,14);
 
+%BEEG YOSHI;
+
 gx = trim(:,15);
 gy = trim(:,16);
 gz = trim(:,17);
