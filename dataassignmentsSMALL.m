@@ -381,3 +381,7 @@ fx = m*ax;
 fy = m*ay;
 fz = m*az;
 
+%% New code
+author = 5;
+tech = 10; 
+world = 5;
