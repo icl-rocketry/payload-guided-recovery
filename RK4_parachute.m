@@ -77,15 +77,27 @@ end
 
 figure();
 plot(t, X);
+title("X vs time");
+xlabel('time'); ylabel('X');
 
 figure();
 plot(t, U);
+title("U vs time");
+xlabel('time'); ylabel('U');
 
 figure();
 plot(t, Z);
-
+title("Z vs time");
+xlabel('time'); ylabel('Z');
 % figure();
 % plot3(X, Y, Z);
 
 figure();
 plot(t, W);
+title("W vs time");
+xlabel('time'); ylabel('W');
+
+figure();
+plot(t, Cl);
+title("CL vs time");
+xlabel('time'); ylabel('CL');

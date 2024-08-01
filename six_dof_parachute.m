@@ -49,8 +49,8 @@ g=9.81; %gravity
 rho=1.225; %density of air
 
 a=36 * 0.0254; %height of parafoil
-b=1.26; %84 * 0.0254; %wing span 1.26;
-c=0.25; %24 * 0.0254; %wing chord 0.25; 
+b=1.42; %84 * 0.0254; %wing span 1.26;
+c=0.4264; %24 * 0.0254; %wing chord 0.25; 
 S=b*c; %wing area
 t=0.14*c; %5*0.0254; %thickness 0.14*c; 
 
@@ -59,7 +59,7 @@ Xcg = 0; %dist from confluence point to systems cg
 %point on parafoil along z axis
 Zcg = 48 * 0.0254;
 
-rigging_angle = 10; %degrees
+rigging_angle = 9; %degrees
 
 vc = sqrt(V'*V); %velocity
 qbar = 0.5 * rho * vc*vc; %dynamic pressure
@@ -113,8 +113,9 @@ Cn_aileron=0.05;
 %Coefficient buildup
 
 CL=CL_o + CL_alpha * alpha + CL_brake*brake; %lift coefficient
-
+CL= 0.6842;
 CD=CD_o + CD_alpha * alpha + CD_brake_squared * brake^2 + CD_brake * brake;
+CD = 0.1811;
 
 Cm = Cm_o + Cm_alpha * alpha + Cm_brake*brake + Cm_brake_squared*brake^2;
 
