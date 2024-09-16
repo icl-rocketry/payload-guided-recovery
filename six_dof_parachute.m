@@ -1,4 +1,4 @@
-function [xdot, y] = six_dof_parachute(x, u)
+function xdot = six_dof_parachute(x, u)
 % format:
 % x(1)=X (North-East-Up format)
 % x(2)=Y
@@ -17,6 +17,7 @@ function [xdot, y] = six_dof_parachute(x, u)
 % u(2)=aileron
 xdot=zeros(12,1);
 %simpler variables
+
 p = [x(1); x(2); x(3)]; %X Y Z
 PHI = ([x(4); x(5); x(6)]); %roll pitch yaw
 V = [x(7); x(8); x(9)]; %U V W
@@ -35,8 +36,8 @@ OMEGA = [ 0 -x(12) x(11); x(12) 0 -x(10); -x(11) x(10) 0];
 %direction cosine matrix
 DCM = [1 0 0; 0 cos(PHI(1)) sin(PHI(1)); ...
     0 -sin(PHI(1)) cos(PHI(1))] * ...
-    [cos(PHI(2)) 0 sin(PHI(2)); 0 1 0; ...
-    -sin(PHI(2)) 0 cos(PHI(2))] * ...
+    [cos(PHI(2)) 0 -sin(PHI(2)); 0 1 0; ...
+    sin(PHI(2)) 0 cos(PHI(2))] * ...
     [cos(PHI(3)) sin(PHI(3)) 0; ...
     -sin(PHI(3)) cos(PHI(3)) 0; 0 0 1];
 
@@ -49,19 +50,19 @@ g=9.81; %gravity
 rho=1.225; %density of air
 
 a=36 * 0.0254; %height of parafoil
-b=1.42; %84 * 0.0254; %wing span 1.26;
-c=0.4264; %24 * 0.0254; %wing chord 0.25; 
+b=1.267; %84 * 0.0254; %wing span 1.26;
+c=(0.192 + 0.55)/2; %0.4264; %24 * 0.0254; %wing chord 0.25; 
 S=b*c; %wing area
 t=0.14*c; %5*0.0254; %thickness 0.14*c; 
 
 Xcg = 0; %dist from confluence point to systems cg
 %dist from confluence point to quarter chord
 %point on parafoil along z axis
-Zcg = 48 * 0.0254;
+Zcg = 0.6; %48 * 0.0254;
 
 rigging_angle = 9; %degrees
 
-vc = sqrt(V'*V); %velocity
+vc = norm(V); %velocity
 qbar = 0.5 * rho * vc*vc; %dynamic pressure
 mass = 3; %4; %mass in kg
 alpha = rad2deg(atan2(V(3), V(1))) - rigging_angle;
@@ -85,7 +86,9 @@ K_Iabc = [I_A 0 0; 0 I_B 0; 0 0 I_C];
 % K Iabc = [0 0 0; 0 0 0; 0 0 0];
 
 %inertia matrix
-J_1=1.3558*[.1357 0 .0025; 0 .1506 0; .0025 0 .0203];
+% J_1=1.3558*[.1357 0 -.0025; 0 .1506 0; -.0025 0 .0203]; %ft lbs force to Joule
+% J_1=1.3558*[6.1298 0 -0.0025; 0 6.150 0; -0.0025 0 .0203]; %ft lbs force to Joule
+J_1 = [0.42, 0, 0.03; 0, 0.4, 0; 0.03, 0, 0.053];
 
 %J_2= J_1+[I A 0 0; 0 I B 0; 0 0 I C];
 %J = J_2 + [0 0 Xcg*Zcg; 0 sqrt(Xcg*Xcg+Zcg*Zcg) 0;
@@ -93,29 +96,29 @@ J_1=1.3558*[.1357 0 .0025; 0 .1506 0; .0025 0 .0203];
 J = J_1 + mass * [Zcg^2 0 0; 0 Zcg^2 0; 0 0 0];
 
 %Aerodynamic Coefficients - Iacomini & Cerimele
-CL_o=0.2;
-CL_alpha=0.0375;
+CL_o=0.091;
+CL_alpha=0.9;
 CL_brake=0.377;
 
-CD_o=0.12;
-CD_alpha=0.0073;
+CD_o=0.25;
+CD_alpha=0.12;
 CD_brake_squared=0.266;
 CD_brake=0.076;
 
-Cm_o=-0.0115;
-Cm_alpha=-0.004;
+Cm_o=0.35;
+Cm_alpha= -0.72;
 Cm_brake_squared=0.16;
 Cm_brake=0.056;
 
-Cn_r=-0.0936; %always negative for stability
+Cn_r=-0.27; %always negative for stability
 Cn_aileron=0.05;
 
 %Coefficient buildup
 
 CL=CL_o + CL_alpha * alpha + CL_brake*brake; %lift coefficient
-CL= 0.6842;
+% CL= 0.6842;
 CD=CD_o + CD_alpha * alpha + CD_brake_squared * brake^2 + CD_brake * brake;
-CD = 0.1811;
+% CD = 0.1811;
 
 Cm = Cm_o + Cm_alpha * alpha + Cm_brake*brake + Cm_brake_squared*brake^2;
 
@@ -131,12 +134,14 @@ M = [qbar*S*b*Cl - mass * abs(g)*Zcg*sin(PHI(1)) * cos(PHI(2)); ...
     qbar*S*b*Cn]; %rolling, pitching & yawing moment
 
 [alpha; V;F; vc^2];
-
+%Navigation Equations
+xdot(1:3) =  DCM' * V; %[1 0 0; 0 1 0; 0 0 1]*
 %Force equations
+G = DCM * [0; 0; -g];
 %xdot(7:9)=[1/(mass+A); 1/(mass+B); 1/(mass+C)] .*
 %(F -cross(omega,V.*[mass+A;mass+B;mass+C])+mass*g*H inv(:,3));
 xdot(7:9)=(eye(3) + K_abc / mass)^-1 * ...
-    ((F / mass) -cross(omega,V + mass^-1 * K_abc * V)+g*H_inv(:,3));
+    ((F / mass) - cross(omega, V + mass^-1 * K_abc * V) + G); %+g*H_inv(:,3));
 % [(eye(3) + K abc / mass); alpha V(3) V(1)]
 
 %Kinematic Equations
@@ -147,11 +152,7 @@ xdot(4:6)= H * omega;
 %.* omega)+cross(V,V.*[mass+A;mass+B;mass+C]));
 % xdot(10:12)=(J + K Iabc)^-1 * (M - OMEGA * J * omega);
 xdot(10:12)=(J + K_Iabc)^-1 * ...
-    (M -cross(omega,K_Iabc * omega) - ...
-    cross(V,K_abc * V) - OMEGA * J * omega);
-
-
-%Navigation Equations
-xdot(1:3) = [1 0 0; 0 1 0; 0 0 -1] * DCM' * V;
+    (M - cross(omega, K_Iabc * omega) - ...
+    cross(V,K_abc * V) - cross(omega, J*omega)); %OMEGA * J * omega); %
 
 end
