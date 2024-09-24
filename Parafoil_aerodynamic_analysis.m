@@ -65,6 +65,7 @@ xlabel('alpha (deg)');
 ylabel('C_L/C_D');
 legend('AR = 3', 'AR = 3.3');
 hold off
+%% 
 
 % Span and line length ratio calculations
 b = 1.421; % Span (m)
@@ -177,6 +178,7 @@ xlabel('alpha');
 ylabel('C_{D2_{alpha}}');
 legend('alpha = 0','AR = 3', 'AR = 3.3');
 hold off
+%% 
 
 % C_M calculations
 % maintaining stable equilibrium at each alpha
@@ -236,9 +238,10 @@ xlabel('alpha');
 ylabel('updated C_{M2}');
 legend('alpha = 0','C_{M2}')
 hold off
+%% data storing
 
-headers = {'alpha (deg)', 'C_L2', 'C_L2alpha', 'C_D2', 'C_D2alpha', 'up_C_M2', 'C_M2_alpha','corr_mu'};
-data = [alpha' .* 180/pi, C_L2(:,2), C_L2alpha(:,2), C_D2(:,2), C_D2alpha(:,2), up_C_M2', C_M2_alpha',corr_mu' .*180/pi]; 
+headers = {'alpha (deg)', 'C_L2', 'C_L2alpha', 'C_D2', 'C_D2alpha', 'C_L2/C_D2','up_C_M2', 'C_M2_alpha','corr_mu'};
+data = [alpha' .* 180/pi, C_L2(:,2), C_L2alpha(:,2), C_D2(:,2), C_L2(:,2) ./ C_D2(:,2), C_D2alpha(:,2), up_C_M2', C_M2_alpha',corr_mu' .*180/pi]; 
 filename = 'aerodynamic_analysis_results.xlsx';
 writecell(headers, filename, 'Sheet', 1, 'Range', 'A1');
 writematrix(data, filename, 'Sheet', 1, 'Range', 'A2');
