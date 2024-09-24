@@ -16,7 +16,8 @@ delta = [0.01875, 0.022];
 % Calculating a0_dash and a for different AR values
 a0_dash = (2 * pi .* AR) .* tanh(a0 ./ (2 * pi .* AR));
 a = (pi .* AR .* a0_dash) ./ (pi .* AR + a0_dash .* (1 + tau));
-
+a0_dash = a0_dash.*180/pi;
+a = a.*180/pi;
 % Angle of attack range
 alpha = [-7:0.05:10] .* pi/180;
 
@@ -73,9 +74,12 @@ R_b = linspace(0.4, 1.6, length(alpha));
 R = b .* R_b;
 beta = b ./ (4 .* R);
 % alpha = 5 * pi/180;
-
+e0 = 45*pi/180;
 for i = 1:length(a)
     C_L2(:,i) = a(i) .* (alpha - alpha_zl) .* cos(beta).^2;
+    k(:,i) = AR(i)*pi/a0;
+    C_L3alpha(:,i) = AR(i)*pi/(sqrt(k(i)^2 + 1)+1); 
+    C_L3(:,i) = C_L3alpha(:,i)*(alpha*cos(e0/2)-alpha_zl)*cos(e0/2);
 end
 % Plotting C_L2 vs alpha
 figure();
@@ -84,12 +88,17 @@ hold on
 plot(alpha .* 180/pi, C_L2(:,1));
 hold on
 plot(alpha .* 180/pi, C_L2(:,2));
+hold on
+plot(alpha .* 180/pi, C_L3(:,1));
+hold on
+plot(alpha .* 180/pi, C_L3(:,2));
 xlabel('alpha');
-ylabel('C_{L2}');
-legend('alpha = 0','AR = 3', 'AR = 3.3');
+ylabel('C_{L2} & C_{L3}');
+legend('alpha = 0','AR = 3', 'AR = 3.3', 'C_{L3} AR = 3 ','C_{L3} AR = 3.3 ');
 hold off
+
 for i = 1:length(a)
-    C_L2alpha(:,i) = a(i).* cos(beta).^2;
+    C_L2alpha(:,i) = a(i).* cos(beta).^2;%per rad
 end
 % Plotting C_L2alpha vs alpha
 figure();
@@ -97,20 +106,28 @@ plot(alpha .* 180/pi, C_L2alpha(:,1));
 hold on
 plot(alpha .* 180/pi, C_L2alpha(:,2));
 hold on
+plot(alpha .* 180/pi, C_L3alpha(:,1)*ones(size(alpha)));
+hold on
+plot(alpha .* 180/pi, C_L3alpha(:,2)*ones(size(alpha)));
+hold on
 xline(0);
 xlabel('alpha');
-ylabel('C_{L2_{alpha}}');
-legend('AR = 3', 'AR = 3.3', 'alpha = 0');
+ylabel('C_{L2_{alpha}} & C_{L3_{alpha}}');
+legend('C_{L2_{alpha}} AR = 3', 'C_{L2_{alpha}} AR = 3.3','C_{L3_{alpha}} AR = 3 ','C_{L3_{alpha}} AR = 3.3 ', 'alpha = 0');
 hold off
 
-% Plotting C_L2/C_L vs R/b
+% Plotting C_L2/C_L and C_L3/C_L vs R/b
 figure();
 plot(R_b, C_L2(:,1) ./ C_L(:,1));
 hold on
 plot(R_b, C_L2(:,2) ./ C_L(:,2));
+hold on
+plot(R_b, C_L3(:,1) ./ C_L(:,1));
+hold on
+plot(R_b, C_L3(:,2) ./ C_L(:,2));
 xlabel('line length / span (R/b)');
 ylabel('C_L/C_L (R/b=inf)');
-legend('AR = 3', 'AR = 3.3');
+legend('C_{L2}/C_L AR = 3', 'C_{L2}/C_L AR = 3.3', 'C_{L3}/C_L AR = 3', 'C_{L3}/C_L AR = 3.3');
 hold off
 
 % Surface area and chord length calculations
@@ -162,18 +179,20 @@ hold off
 
 for i = 1:length(a)
     C_Dlalpha(:,i) = -(n .* R .* d .*3.* (alpha).^2.*sin(alpha).^3) ./ S(i);
+    % C_Dlalpha(:,i) = C_Dlalpha(:,i) * pi/180;
 end
 
 for i = 1:length(delta)
     C_D2alpha(:,i) =  C_Dlalpha(:,i) + (2.*C_L(:,i).*C_Lalpha(:,i) .* (1 + delta(i))) ./ (pi * AR(i));
+    % C_D2alpha(:,i) = C_D2alpha(:,i) * pi/180;
 end
 % Plotting C_D2alpha vs alpha
 figure();
 xline(0);
 hold on
-plot(alpha .* 180/pi, C_D2alpha(:,1));
+plot(alpha .* 180/pi, C_D2alpha(:,1).*pi/180);
 hold on
-plot(alpha .* 180/pi, C_D2alpha(:,2));
+plot(alpha .* 180/pi, C_D2alpha(:,2).*pi/180);
 xlabel('alpha');
 ylabel('C_{D2_{alpha}}');
 legend('alpha = 0','AR = 3', 'AR = 3.3');
@@ -209,6 +228,7 @@ for i = 1:length(alpha)
         C_M2_alpha(i) = (R_dp/c(2)) * (C_Ds(2) * sin(alpha(i) + corr_mu(i))) ...
             + R_dp * n * R_dp * d * (sin(alpha(i) + corr_mu(i))^2) / (S(2) * 2 * c(2)) ...
             - d_gamma_alpha * m_s * g * R_dp * cos(alpha(i) + corr_mu(i) - gamma(:,i)) / (0.5 * rho * V^2 * S(2) * c(2));
+        % C_M2_alpha(i) = C_M2_alpha(i) * pi/180;
         % Penalize if C_M2_alpha is not negative
         if C_M2_alpha >= 0
             corr_mu(i) = Inf; 
