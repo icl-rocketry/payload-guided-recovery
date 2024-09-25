@@ -41,6 +41,11 @@ DCM = [1 0 0; 0 cos(PHI(1)) sin(PHI(1)); ...
     [cos(PHI(3)) sin(PHI(3)) 0; ...
     -sin(PHI(3)) cos(PHI(3)) 0; 0 0 1];
 
+% DCM = [cos(PHI(2))*cos(PHI(3)) cos(PHI(2))*sin(PHI(3)) -sin(PHI(2)); ...
+%     (-cos(PHI(1))*sin(PHI(3)) + sin(PHI(1))*sin(PHI(2))*cos(PHI(3))) (cos(PHI(1))*cos(PHI(3)) + sin(PHI(1))*sin(PHI(2))*sin(PHI(3))) sin(PHI(1))*cos(PHI(2)); ...
+%     (sin(PHI(1))*sin(PHI(3)) + cos(PHI(1))*sin(PHI(2))*cos(PHI(3))) (-sin(PHI(1))*cos(PHI(3)) + cos(PHI(1))*sin(PHI(2))*sin(PHI(3))) cos(PHI(1))*cos(PHI(2))];
+
+
 v_wind = [0; 0; 0];
 
 V = V - v_wind;
@@ -110,8 +115,8 @@ Cm_alpha= -0.72;
 Cm_brake_squared=0.16;
 Cm_brake=0.056;
 
-Cn_r=-0.27; %always negative for stability
-Cn_aileron=0.05;
+Cn_r= -0.09; %-0.27; %always negative for stability
+Cn_aileron= 0.007; %0.05;
 
 %Coefficient buildup
 
