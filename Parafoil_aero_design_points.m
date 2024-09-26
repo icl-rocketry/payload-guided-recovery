@@ -98,7 +98,7 @@ C_lphi_paper2 = 0; % no value
 
 C_Yp_paper2 = C_Lalpha_paper2 * k1_paper2 * sin(eps) / 4;
 C_np_paper2 = C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(eps)/(8*eps)) * alpha_zl;
-C_nalphap = -C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(3*eps/2) / (4*eps));
+C_nalphap_paper2 = -C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(3*eps/2) / (4*eps));
 
 %% Side slip angle derivatives !!
 
