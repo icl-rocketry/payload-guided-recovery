@@ -85,7 +85,7 @@ C_M_paper1 = C_Mc4 - (R/c) * (C_Ds * cos(alpha + mu)) ...
 %% Yaw damping
 
 C_Yr_paper2 = C_Lalpha_paper2 * (sin(eps)/2) * alpha_zl;
-C_Yr_paper2 = -C_Lalpha_paper2 * (sin(eps)/2) * cos(eps/2)^2;
+C_Yalphar_paper2 = -C_Lalpha_paper2 * (sin(eps)/2) * cos(eps/2)^2;
 C_lr_paper2 = -C_Lalpha_paper2 * (sin(eps)/(4*eps)) * alpha_zl;
 C_lalphar_paper2 = C_Lalpha_paper2 * (sin(eps/2)/(2*eps)) * cos(eps/2)^2;
 C_nr_paper2 = -(C_D0_paper1 * sin(eps))/(3*eps) - (C_Lalpha_paper2^2 * sin(eps/2)^2 * alpha_zl)/(e*AR*pi*8*eps^2) - (C_Lalpha_paper2 * eps^2) / (AR^2 * 24);
@@ -98,7 +98,7 @@ C_lphi_paper2 = 0; % no value
 
 C_Yp_paper2 = C_Lalpha_paper2 * k1_paper2 * sin(eps) / 4;
 C_np_paper2 = C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(eps)/(8*eps)) * alpha_zl;
-C_nalphap = -C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(3*eps/2) / (4*eps));
+C_nalphap_paper2 = -C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(3*eps/2) / (4*eps));
 
 %% Side slip angle derivatives
 
