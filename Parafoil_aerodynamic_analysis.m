@@ -337,6 +337,6 @@ for j = 1:length(mu1)
     plot(alpha1.*180/pi, C_M(j,:));
 end
 xlabel('alpha (deg)');
-ylabel('C_M');
+ylabel('C_M')
 legend('Zero Line', 'Design Point', 'C_M curves');
 hold off
