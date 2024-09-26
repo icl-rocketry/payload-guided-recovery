@@ -5,7 +5,7 @@
 clear all; close all; clc;
 
 % Constants and parameters
-a0 = 0.11*180/pi; % Clark Y lift curve slope (deg^-1)
+a0 = 0.11*180/pi; % Clark Y lift curve slope (rad^-1)
 alpha_zl = -3 * pi/180; % Zero lift angle of attack (rad)
 alpha = [-3:0.05:10] .* pi/180; % rad
 % Aspect Ratios
@@ -82,16 +82,16 @@ C_M_paper1 = C_Mc4 - (R/c) * (C_Ds * cos(alpha + mu)) ...
             - R./ (S * 2 * c) * (n * R * d .* (cos(alpha + mu).^2))  ...
             - (m_s * g * R * sin(alpha + mu - gamma)) ./ (0.5 .* rho * V.^2 .* S .* c);
 
-%% Yaw damping
+%% Yaw damping !!
 
 C_Yr_paper2 = C_Lalpha_paper2 * (sin(eps)/2) * alpha_zl;
-C_Yr_paper2 = -C_Lalpha_paper2 * (sin(eps)/2) * cos(eps/2)^2;
+C_Yralpha_paper2 = -C_Lalpha_paper2 * (sin(eps)/2) * cos(eps/2)^2;
 C_lr_paper2 = -C_Lalpha_paper2 * (sin(eps)/(4*eps)) * alpha_zl;
 C_lalphar_paper2 = C_Lalpha_paper2 * (sin(eps/2)/(2*eps)) * cos(eps/2)^2;
 C_nr_paper2 = -(C_D0_paper1 * sin(eps))/(3*eps) - (C_Lalpha_paper2^2 * sin(eps/2)^2 * alpha_zl)/(e*AR*pi*8*eps^2) - (C_Lalpha_paper2 * eps^2) / (AR^2 * 24);
 C_nalphar_paper2 = ( ((C_Lalpha_paper2^2) / (e * AR * pi)) * (sin(eps)/eps) - C_Lalpha_paper2 * ((sin(eps)^2) / (eps^2)) ) * alpha_zl;
 
-%% Roll damping
+%% Roll damping !!
 
 C_lp_paper2 = - C_Lalpha_paper2 * k1_paper2 * sin(eps)/(8*eps);
 C_lphi_paper2 = 0; % no value 
@@ -100,11 +100,11 @@ C_Yp_paper2 = C_Lalpha_paper2 * k1_paper2 * sin(eps) / 4;
 C_np_paper2 = C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(eps)/(8*eps)) * alpha_zl;
 C_nalphap = -C_Lalpha_paper2 * k1_paper2 * k2_paper2 * (sin(3*eps/2) / (4*eps));
 
-%% Side slip angle derivatives
+%% Side slip angle derivatives !!
 
 C_Ybeta_paper2 = -C_Lalpha_paper2 * k1_paper2 * ((eps * sin(eps)) / 4) - C_D0_paper1 * ((1 + 2*cos(eps)) / 3);
 C_lbeta_paper2 = C_Lalpha_paper2 * k1_paper2 * (sin(eps) / 8);
-C_nbeta_paper2 = C_Lalpha_paper2 * k1_paper2  * k2_paper2 * (sin(eps) / 8) * alpha_zl;
+C_nbeta_paper2 = -C_Lalpha_paper2 * k1_paper2  * k2_paper2 * (sin(eps) / 8) * alpha_zl;
 C_nalphabeta_paper2 = C_Lalpha_paper2 * k1_paper2 * k2_paper2 * ((sin(3*eps/2))/4);
 
 
