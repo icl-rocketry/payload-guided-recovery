@@ -3,6 +3,16 @@ T = 0.05;
 end_time = 1000;
 num_of_steps = floor(end_time / T);
 
+%% SETUP PARAMETERS
+g = 9.81; % m/s
+
+[pfoilParams.b, pfoilParams.c, pfoilParams.S, pfoilParams.AR, pfoilParams.t, pfoilParams.mu, pfoilParams.eps, pfoilParams.a, pfoilParams.R, pfoilParams.d, pfoilParams.n, pfoilParams.m_s, pfoilParams.A_cube] = calcPfoilGeometry();
+
+[aeroParams] = calcAeroCoeffs(pfoilParams);
+
+
+%%
+
 % u=cell(1,num_of_steps);
 % x=cell(1,num_of_steps);
 %
@@ -20,8 +30,8 @@ num_of_steps = floor(end_time / T);
 % end
 %
 % disp = 0;
-opts = odeset('Events',@iHitTheGround);
-[t,x] = ode23s(@(t,x) six_dof_parachute(x, [0 0]), [0 end_time], [0; 0; 3000; 0; 0; 0; 0; 0; 45; 0; 0; 0],opts);
+opts = odeset('Events',@iHitTheGround, 'OutputFcn',@odeplot);
+[t,x] = ode45(@(t,x) six_dof_parachute(x, [0 0], aeroParams, pfoilParams, g), [0 end_time], [0; 0; 3000; 0; 0; 0; 0; 0; 45; 0; 0; 0], opts);
 
 function [value, isterminal, direction] = iHitTheGround(t,x)
 value = x(3);

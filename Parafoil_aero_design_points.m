@@ -1,8 +1,5 @@
 % CLARK Y Parafoil Aerodynamic Analysis DESIGN POINTS
-% NEED TO CONVERT TO DEGREES
 % started 25/09/24 - Rosalind Aves
-
-clear all; close all; clc;
 
 % Constants and parameters
 a0 = 0.11*180/pi; % Clark Y lift curve slope (rad^-1)
@@ -57,7 +54,7 @@ C_Dl = (n .* R .* d .* cos(alpha).^3) ./ S;
 C_Ds = A_cube/ S;
 
 C_D_paper1 = C_D_paper1 + C_Dl + C_Ds; % ADDING LINE AND STORE DRAG
-C_D_paper2 = C_D0_paper1 + C_Ds + C_Lalpha_paper2.^2 .* (alpha*cos(eps/2) - alpha_zl).^2 / (e*AR*pi);
+C_D_paper2 = C_D0_paper1 + C_Ds + C_Dl + C_Lalpha_paper2.^2 .* (alpha*cos(eps/2) - alpha_zl).^2 / (e*AR*pi); %ADD TO 6DOF
 
 %% C_M coefficients !!
 

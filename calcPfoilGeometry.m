@@ -1,6 +1,25 @@
-% Parafoil dimensions
-% started 25/09/24 - Rosalind Aves
-function [eps, a, R] = calcEpsilon(b, controlLengthWT)
+% Parafoil geometry
+% started 26/09/24 - Rosalind Aves
+
+function [b, c, S, AR, t, mu, eps, a, R, d, n, m_s, A_cube] = calcPfoilGeometry()
+
+b = 1.267; %wing span
+c = (0.192 + 0.55)/2; %wing chord
+
+S=b*c; %wing area
+t=0.11*c; % airfoil thickness; 
+AR = b/c;
+
+mu = deg2rad(5); % rigging angle in radians (imposed incidence by line lengths)
+
+% Surface area and chord length calculations
+d = 1.5e-3; % Line diameter (m)
+n = 24;
+m_s = 3 + 0.2;
+A_cube = sqrt(0.3^2 + 0.1^2)*0.1; % Cubesat area (m^2)
+
+%% anhedral angle calculations
+controlLengthWT = 0.365;
 
 maxRadius = 1.39 - controlLengthWT; % vertical distance from centre of parafoil to end of bridle line
 
@@ -21,12 +40,4 @@ eps7root = acos((bridle7^2 + maxRadius^2 - (cellLength/2)^2) / (2*bridle7*maxRad
 eps = sum([eps13 eps35 eps57 eps7root]);
 
 a = b/2 * (1-cos(eps)) / eps; % distance from parafoil tip to root (height) in m
-
-% a_forced =  0.25*5*0.33;
-% 
-% % Newton Raphson
-% 
-% fun = @(x) (b/2 * (1-cos(x)) / x) - a_forced;
-% x = fzero(fun, deg2rad(90));
-
 end

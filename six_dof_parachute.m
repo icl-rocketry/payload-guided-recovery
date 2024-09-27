@@ -1,4 +1,4 @@
-function xdot = six_dof_parachute(x, u)
+function xdot = six_dof_parachute(x, u, aeroParams, pfoilParams, g)
 % format:
 % x(1)=X (North-East-Up format)
 % x(2)=Y
@@ -15,7 +15,7 @@ function xdot = six_dof_parachute(x, u)
 %
 % u(1)=brake
 % u(2)=aileron
-xdot=zeros(12,1);
+% xdot=zeros(12,1);
 %simpler variables
 
 p = [x(1); x(2); x(3)]; %X Y Z
@@ -30,7 +30,7 @@ H=[1 tan(PHI(2))*sin(PHI(1)) tan(PHI(2))*cos(PHI(1)); ...
     0 sin(PHI(1))/cos(PHI(2)) cos(PHI(1))/cos(PHI(2))];
 H_inv = H^-1;
 
-%cross product matrix
+%skew symm cross product matrix
 OMEGA = [ 0 -x(12) x(11); x(12) 0 -x(10); -x(11) x(10) 0];
 
 %direction cosine matrix
@@ -49,104 +49,161 @@ DCM = [1 0 0; 0 cos(PHI(1)) sin(PHI(1)); ...
 v_wind = [0; 0; 0];
 
 V = V - v_wind;
+beta = tan(abs(V(2)/V(1)));
+if V(1) == 0
+    beta = 0;
+end
 
-%constants
-g=9.81; %gravity
-rho=1.225; %density of air
-
-a=36 * 0.0254; %height of parafoil
-b=1.267; %84 * 0.0254; %wing span 1.26;
-c=(0.192 + 0.55)/2; %0.4264; %24 * 0.0254; %wing chord 0.25; 
-S=b*c; %wing area
-t=0.14*c; %5*0.0254; %thickness 0.14*c; 
+rho = atmos(x(3), 4); %density of air (function of height)
 
 Xcg = 0; %dist from confluence point to systems cg
 %dist from confluence point to quarter chord
 %point on parafoil along z axis
-Zcg = 0.6; %48 * 0.0254;
+Zcg = 1.2; %48 * 0.0254;
 
-rigging_angle = 9; %degrees
+rigging_angle = pfoilParams.mu;
 
 vc = norm(V); %velocity
-qbar = 0.5 * rho * vc*vc; %dynamic pressure
-mass = 3; %4; %mass in kg
-alpha = rad2deg(atan2(V(3), V(1))) - rigging_angle;
+qbar = 0.5 * rho * vc^2; %dynamic pressure
+mass = pfoilParams.m_s; %4; %mass in kg
+alpha = (atan2(V(3), V(1))) - rigging_angle;
 
 %apparent mass terms
-A = 0.899 * pi() / 4 * t^2 * b;
-B = 0.39 * pi() / 4 * (t^2 + 2 * deg2rad(alpha)^2) * c;
-C = 0.783 * pi() / 4 * c^2 * b;
+% A = 0.899 * pi() / 4 * pfoilParams.t^2 * pfoilParams.b; %OLD
+% B = 0.39 * pi() / 4 * (pfoilParams.t^2 + 2 * (alpha)^2) * pfoilParams.c; %OLD
+% C = 0.783 * pi() / 4 * pfoilParams.c^2 * pfoilParams.b; %OLD
+% 
+% I_A = 0.63 * pi() / 48 * pfoilParams.c^2 * pfoilParams.b^3; %OLD
+% I_B = 0.817 * 4 / (48*pi()) * pfoilParams.c^4*pfoilParams.b; %OLD
+% I_C = 1.001 * pi() / 48 * pfoilParams.t^2 * pfoilParams.b^3; %OLD
 
-I_A = 0.63 * pi() / 48 * c^2 * b^3;
-I_B = 0.817 * 4 / (48*pi()) * c^4*b;
-I_C = 1.001 * pi() / 48 * t^2 * b^3;
+%NEW
+abar = pfoilParams.a / pfoilParams.b;
+tbar = pfoilParams.t / pfoilParams.c;
 
+A = 0.666 * rho * (1+8/3*abar^2) * pfoilParams.t^2*pfoilParams.b;
+B = 0.267 * rho * (1 + 2*abar^2 / tbar^2 * pfoilParams.AR * (1-tbar^2)) * pfoilParams.t^2 * pfoilParams.c;
+C = 0.785 * rho * sqrt(1 + 2*abar^2 * (1-tbar^2)) * pfoilParams.AR / (1 + pfoilParams.AR) * pfoilParams.c^2 * pfoilParams.b;
+
+I_A = 0.055 * rho * pfoilParams.AR / (1 + pfoilParams.AR) * pfoilParams.c^2 * pfoilParams.b^3;
+I_B = 0.0308 * rho * pfoilParams.AR / (1 + pfoilParams.AR) * (1 + (pi/6) * (1 + pfoilParams.AR) * pfoilParams.AR * abar^2 * tbar^2) * pfoilParams.c^4 * pfoilParams.b;
+I_C = 0.0555 * rho * (1+8*abar^2) * pfoilParams.t^2 * pfoilParams.b^3;
 
 K_abc = [A 0 0; 0 B 0; 0 0 C];
+K_abc = eye(3);
 K_Iabc = [I_A 0 0; 0 I_B 0; 0 0 I_C];
-
+K_Iabc = eye(3);
 [K_abc; K_Iabc];
 
 % K abc = [0 0 0; 0 0 0; 0 0 0];
 % K Iabc = [0 0 0; 0 0 0; 0 0 0];
 
 %inertia matrix
-% J_1=1.3558*[.1357 0 -.0025; 0 .1506 0; -.0025 0 .0203]; %ft lbs force to Joule
+% J_1=1.3558*[.1357 0 -.0025; 0 .1506 0; -.0025 0 .0203]; %ft lbs force to Joule from masters thesis
 % J_1=1.3558*[6.1298 0 -0.0025; 0 6.150 0; -0.0025 0 .0203]; %ft lbs force to Joule
-J_1 = [0.42, 0, 0.03; 0, 0.4, 0; 0.03, 0, 0.053];
+J_1 = [0.42, 0, 0.03; 0, 0.4, 0; 0.03, 0, 0.053]; % from paper
+
+v_vol = 0.09 * pfoilParams.c^2 * pfoilParams.b;
+b_inf = 2 * pfoilParams.R * sin(pfoilParams.eps);
+h_mean = v_vol / (pfoilParams.c * b_inf);
+
+Jxxp = (v_vol * rho + 0.2)/12 * (b_inf^2 + h_mean^2);
+Jyyp = (v_vol * rho + 0.2)/12 * (pfoilParams.c^2 + h_mean^2);
+Jzzp = (v_vol * rho + 0.2)/12 * (b_inf^2 + pfoilParams.c^2);
+
+Jxxv = 3/12 * (0.1^2 + 0.3^2);
+Jyyv = 3/12 * (0.1^2 + 0.3^2);
+Jzzv = 3/12 * (0.1^2 + 0.1^2);
+
+J_1 = [Jxxv+Jxxp 0 0; 0 Jyyv+Jyyp 0; 0 0 Jzzv+Jzzp];
+
+% J_1 = [1.622e6 1794.579 1821.736; 1794.579 1.177e7 -68077.582; 1821.736 -68077.582 1.22e7].* 1e-9; %from CAD
 
 %J_2= J_1+[I A 0 0; 0 I B 0; 0 0 I C];
 %J = J_2 + [0 0 Xcg*Zcg; 0 sqrt(Xcg*Xcg+Zcg*Zcg) 0;
 %Xcg*Zcg 0 0] * (mass+B);
 J = J_1 + mass * [Zcg^2 0 0; 0 Zcg^2 0; 0 0 0];
 
-%Aerodynamic Coefficients - Iacomini & Cerimele
-CL_o=0.091;
-CL_alpha=0.9;
-CL_brake=0.377;
+% Aerodynamic Coefficients - Iacomini & Cerimele
+CL_0= aeroParams.CL0; % 0.091;
+CL_alpha= aeroParams.CLalpha; %0.9;
+% CL_brake=0.377;
 
-CD_o=0.25;
-CD_alpha=0.12;
-CD_brake_squared=0.266;
-CD_brake=0.076;
+CD_0= aeroParams.CD0; %0.25;
+CD_s = aeroParams.CDs;
+% CD_alpha=0.12;
+C_Dl = (pfoilParams.n .* pfoilParams.R .* pfoilParams.d .* cos(alpha).^3) ./ pfoilParams.S;
+% CD_brake_squared=0.266;
+% CD_brake=0.076;
 
-Cm_o=0.35;
-Cm_alpha= -0.72;
-Cm_brake_squared=0.16;
-Cm_brake=0.056;
+% Cm_o=0.35;
+% Cm_alpha= -0.72;
+% Cm_brake_squared=0.16;
+% Cm_brake=0.056;
+Cm_q = aeroParams.Cmq;
 
-Cn_r= -0.09; %-0.27; %always negative for stability
-Cn_aileron= 0.007; %0.05;
+Cn_p = aeroParams.Cnp;
+Cn_r = aeroParams.Cnr; %-0.09; %-0.27; % always negative for stability
+Cn_beta = aeroParams.Cnbeta;
+% Cn_alphap = aeroParams.Cnalphap; %IGNORING FOR NOW
+% Cn_alphar = aeroParams.Cnalphar; %IGNORING FOR NOW
+% Cn_alphabeta = aeroParams.Cnalphabeta; %IGNORING FOR NOW
+% Cn_aileron= 0.007; %0.05;
+
+Cl_p = aeroParams.Clp;
+% Cl_phi = aeroParams.Clphi; % VALUE IS 0
+Cl_r = aeroParams.Clr;
+Cl_beta = aeroParams.Clbeta;
+% Cl_alphar = aeroParams.Clalphar; %IGNORING FOR NOW
+
+Cy_p = aeroParams.Cyp;
+Cy_r = aeroParams.Cyr;
+Cy_beta = aeroParams.Cybeta;
+% Cy_alphar = aeroParams.Cyalphar; %IGNORING FOR NOW
+
 
 %Coefficient buildup
 
-CL=CL_o + CL_alpha * alpha + CL_brake*brake; %lift coefficient
-% CL= 0.6842;
-CD=CD_o + CD_alpha * alpha + CD_brake_squared * brake^2 + CD_brake * brake;
-% CD = 0.1811;
+CL=CL_0 + CL_alpha * alpha; %lift coefficient
 
-Cm = Cm_o + Cm_alpha * alpha + Cm_brake*brake + Cm_brake_squared*brake^2;
+% CD=CD_o + CD_alpha * alpha + CD_brake_squared * brake^2 + CD_brake * brake;
+CD = CD_0 + CD_s + C_Dl + CL_alpha.^2 .* (alpha*cos(pfoilParams.eps/2) - aeroParams.alpha_zl).^2 / (aeroParams.e*pfoilParams.AR*pi);
 
-Cn=Cn_r*b/(2*vc) * rad2deg(omega(3)) + Cn_aileron*aileron;
-Cl = 0;
+CY = Cy_beta * beta + Cy_p * ((pfoilParams.b*omega(1))/(2*vc)) + Cy_r * ((pfoilParams.b*omega(3))/(2*vc));
+
+Cm = 0; %((pfoilParams.c*omega(2))/(2*vc))*Cm_q; % +Cm_o + Cm_alpha * alpha
+
+Cn = 0; %Cn_beta * beta + Cn_p * ((pfoilParams.b*omega(1))/(2*vc)) + Cn_r * ((pfoilParams.b*omega(3))/(2*vc));
+% Cn=Cn_r*b/(2*vc) * (omega(3)) + Cn_aileron*aileron;
+
+Cl = 0; %Cl_beta * beta + Cl_p * ((pfoilParams.b*omega(1))/(2*vc)) + Cl_r * ((pfoilParams.b*omega(3))/(2*vc));
 
 %Force & Moment buildup
-F=0.5*rho*S*vc^2*(CL*[sind(rigging_angle+alpha); 0; -cosd(rigging_angle+alpha)] ...
-    - CD*[cosd(rigging_angle+alpha); 0; -sind(rigging_angle+alpha)]);
+F=0.5*rho*pfoilParams.S*vc^2*(CL*[sin(rigging_angle+alpha); 0; -cos(rigging_angle+alpha)] ...
+    - CD*[cos(rigging_angle+alpha); 0; -sin(rigging_angle+alpha)] + [0; CY; 0]);
 
-M = [qbar*S*b*Cl - mass * abs(g)*Zcg*sin(PHI(1)) * cos(PHI(2)); ...
-    qbar*S*c*Cm - mass * abs(g) * Zcg * sin(PHI(2)); ...
-    qbar*S*b*Cn]; %rolling, pitching & yawing moment
+M = [qbar*pfoilParams.S*pfoilParams.b*Cl - mass * abs(g)*Zcg*sin(PHI(1)) * cos(PHI(2)); ...
+    qbar*pfoilParams.S*pfoilParams.c*Cm - mass * abs(g) * Zcg * sin(PHI(2)); ...
+    qbar*pfoilParams.S*pfoilParams.b*Cn]; %rolling, pitching & yawing moment
 
-[alpha; V;F; vc^2];
+
 %Navigation Equations
-xdot(1:3) =  DCM' * V; %[1 0 0; 0 1 0; 0 0 1]*
+% xdot(1:3) =  DCM' * V; %[1 0 0; 0 1 0; 0 0 -1]*
+xdot(1:3) =  [1 0 0; 0 1 0; 0 0 -1]*DCM * x(7:9); %[1 0 0; 0 1 0; 0 0 1]*
+
 %Force equations
 G = DCM * [0; 0; -g];
 %xdot(7:9)=[1/(mass+A); 1/(mass+B); 1/(mass+C)] .*
 %(F -cross(omega,V.*[mass+A;mass+B;mass+C])+mass*g*H inv(:,3));
-xdot(7:9)=(eye(3) + K_abc / mass)^-1 * ...
-    ((F / mass) - cross(omega, V + mass^-1 * K_abc * V) + G); %+g*H_inv(:,3));
+
+Faero = 0.5*rho*pfoilParams.S*vc^2*(CL*[sin(rigging_angle+alpha); 0; -cos(rigging_angle+alpha)] ...
+    - CD*[cos(rigging_angle+alpha); 0; -sin(rigging_angle+alpha)] + [0; CY; 0]);
+Fg = mass.*DCM * [0; 0; g];
+Fapp = -K_abc * x(7:9) - cross(x(10:12), K_abc * x(7:9));
+
+xdot(7:9) = 1/mass*(Faero + Fg + Fapp) - OMEGA * x(7:9);
+% xdot(7:9)=(eye(3) + K_abc / mass)^-1 * ...
+%     ((F / mass) - cross(omega, x(7:9) + mass^-1 * K_abc * x(7:9) + G)); %+g*H_inv(:,3));
 % [(eye(3) + K abc / mass); alpha V(3) V(1)]
 
 %Kinematic Equations
@@ -156,8 +213,15 @@ xdot(4:6)= H * omega;
 % xdot(10:12)=(J^-1) * (M - OMEGA * J * ([I A; I B; I C]
 %.* omega)+cross(V,V.*[mass+A;mass+B;mass+C]));
 % xdot(10:12)=(J + K Iabc)^-1 * (M - OMEGA * J * omega);
-xdot(10:12)=(J + K_Iabc)^-1 * ...
-    (M - cross(omega, K_Iabc * omega) - ...
-    cross(V,K_abc * V) - cross(omega, J*omega)); %OMEGA * J * omega); %
 
+Mapp = -K_Iabc * x(10:12) - cross(x(4:6), K_Iabc * x(4:6)) - cross(x(7:9), K_abc * x(7:9))
+Maero = 0.5 * rho * vc^2 * pfoilParams.S .* [pfoilParams.b*Cl; pfoilParams.c*Cm; pfoilParams.b*Cn]
+Mg = [-mass*g*Zcg*sin(x(5))*cos(x(4)); -mass*g*Zcg*sin(x(4)); 0]
+
+xdot(10:12) = J^-1 * (Mapp + Maero + Mg - cross(omega, J*omega));
+% xdot(10:12) = (J + K_Iabc)^-1 * ...
+%     (M - cross(omega, K_Iabc * omega) - ...
+%     cross(V,K_abc * V) - cross(omega, J*omega)) %OMEGA * J * omega); %
+
+xdot = xdot';
 end
