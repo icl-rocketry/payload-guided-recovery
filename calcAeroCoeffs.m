@@ -44,7 +44,7 @@ C_D0_paper1 = 0.015 + 0.004 + 0.5 * 0.117 + 0.0001;
 % C_D_paper1 = C_D0_paper1 + ((C_Lalpha_paper1 * (alpha - alpha_zl)).^2 .* (1 + delta)) ./ (pi * AR);
 
 % C_Dl = (n .* R .* d .* cos(alpha).^3) ./ S;
-C_Ds = A_cube/S;
+C_Ds = 1.05*A_cube/S; % cuboid CD = 1.05
 
 % C_D_paper1 = C_D_paper1 + C_Dl + C_Ds; % ADDING LINE AND STORE DRAG
 % C_D_paper2 = C_D0_paper1 + C_Ds + C_Dl + C_Lalpha_paper2.^2 .* (alpha*cos(eps/2) - alpha_zl).^2 / (e*AR*pi); %MOVE TO 6DOF

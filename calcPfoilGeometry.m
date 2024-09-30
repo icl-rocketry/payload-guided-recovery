@@ -1,7 +1,7 @@
 % Parafoil geometry
 % started 26/09/24 - Rosalind Aves
 
-function [b, c, S, AR, t, mu, eps, a, R, d, n, m_s, A_cube] = calcPfoilGeometry()
+function [b, c, S, AR, t, mu, eps, a, R, d, n, m_s, m_p, A_cube] = calcPfoilGeometry()
 
 b = 1.267; %wing span
 c = (0.192 + 0.55)/2; %wing chord
@@ -10,12 +10,14 @@ S=b*c; %wing area
 t=0.11*c; % airfoil thickness; 
 AR = b/c;
 
-mu = deg2rad(5); % rigging angle in radians (imposed incidence by line lengths)
+mu = deg2rad(10); % rigging angle in radians (imposed incidence by line lengths)
 
 % Surface area and chord length calculations
 d = 1.5e-3; % Line diameter (m)
 n = 24;
-m_s = 3 + 0.2;
+m_p = 0.2;
+m_v = 30;
+m_s = m_p + m_v;
 A_cube = sqrt(0.3^2 + 0.1^2)*0.1; % Cubesat area (m^2)
 
 %% anhedral angle calculations

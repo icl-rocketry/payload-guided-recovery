@@ -6,7 +6,7 @@ num_of_steps = floor(end_time / T);
 %% SETUP PARAMETERS
 g = 9.81; % m/s
 
-[pfoilParams.b, pfoilParams.c, pfoilParams.S, pfoilParams.AR, pfoilParams.t, pfoilParams.mu, pfoilParams.eps, pfoilParams.a, pfoilParams.R, pfoilParams.d, pfoilParams.n, pfoilParams.m_s, pfoilParams.A_cube] = calcPfoilGeometry();
+[pfoilParams.b, pfoilParams.c, pfoilParams.S, pfoilParams.AR, pfoilParams.t, pfoilParams.mu, pfoilParams.eps, pfoilParams.a, pfoilParams.R, pfoilParams.d, pfoilParams.n, pfoilParams.m_s, pfoilParams.m_p, pfoilParams.A_cube] = calcPfoilGeometry();
 
 [aeroParams] = calcAeroCoeffs(pfoilParams);
 
