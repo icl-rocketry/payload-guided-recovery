@@ -96,6 +96,19 @@ C_lbeta_paper2 = C_Lalpha_paper2 * k1_paper2 * (sin(eps) / 8);
 C_nbeta_paper2 = -C_Lalpha_paper2 * k1_paper2  * k2_paper2 * (sin(eps) / 8) * alpha_zl;
 C_nalphabeta_paper2 = C_Lalpha_paper2 * k1_paper2 * k2_paper2 * ((sin(3*eps/2))/4);
 
+%% Control derivatives (symmetric deflection control has been assumed)
+bk_by_b_paper2 = 0.25;%ratio of deflected surface width to the span assumed to 0.25 for now
+ 
+eps_k_paper2 = eps * (1 - bk_by_b_paper2);
+del_alpha_zl_paper2 = -11 * pi/180 ;
+lk_paper2 = sqrt(AR * S) * (1 - bk_by_b_paper2)*(sin(eps_k_paper2)/eps_k_paper2);
+del_C_D0del = 0.2; %additional profile drag taken from the paper
+C_Ldelta_s_paper2 = -C_Lalpha_paper2 * del_alpha_zl_paper2 * 2 * bk_by_b_paper2 * cos(eps_k_paper2);
+% C_Ddelta_s_paper2 = (C_Lalpha_paper2^2 * (alpha - alpha_zl - del_alpha_zl)^2/(e*AR*pi) + del_C_D0del) * 2 * bk_by_b;
+C_Ydelta_a_paper2 = C_Ldelta_s_paper2 * sin(eps_k_paper2)/(2*cos(eps_k_paper2));
+C_ldelta_a_paper2 = - C_Ldelta_s_paper2 * cos(eps_k_paper2/2)/cos(eps_k_paper2)*lk_paper2/sqrt(AR * S);
+% C_ndelta_a_paper2 = C_Ddelta_s_paper2 * lk/(2*b);
+
 %% put into struct
 aeroParams.alpha_zl = alpha_zl;
 aeroParams.e = e;
@@ -126,4 +139,14 @@ aeroParams.Cyr = C_Yr_paper2;
 aeroParams.Cybeta = C_Ybeta_paper2;
 aeroParams.Cyalphar = C_Yralpha_paper2;
 
+aeroParams.bkbyb = bk_by_b_paper2;
+aeroParams.epsk = eps_k_paper2;
+aeroParams.delalpha_zl = del_alpha_zl_paper2;
+aeroParams.lk = lk_paper2;
+aeroParams.del_C_D0del = del_C_D0del;
+aeroParams.CLdeltas = C_Ldelta_s_paper2;
+% aeroparams.CDdeltas= C_Ddelta_s_paper2;
+aeroParams.CYdeltaa = C_Ydelta_a_paper2;
+aeroParams.Cldeltaa = C_ldelta_a_paper2;
+% aeroparams.Cndeltaa = C_ndelta_a_paper2;
 end
