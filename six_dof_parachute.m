@@ -173,6 +173,10 @@ Cy_r = aeroParams.Cyr;
 Cy_beta = aeroParams.Cybeta;
 % Cy_alphar = aeroParams.Cyalphar; %IGNORING FOR NOW
 
+%Control derivatives which change with alpha:
+C_Ddelta_s_paper2 = (CL_alpha^2 * (alpha - aeroParams.alpha_zl - aeroParams.delalpha_zl)^2/(aeroParams.e*pfoilParams.AR*pi) + aeroParams.del_C_D0del) * 2 * aeroParams.bkbyb;
+C_ndelta_a_paper2 = C_Ddelta_s_paper2 * aeroParams.lk/(2*sqrt(pfoilParams.AR * pfoilParams.S));
+
 
 %Coefficient buildup
 
