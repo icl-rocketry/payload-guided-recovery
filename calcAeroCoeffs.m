@@ -1,13 +1,13 @@
 % CLARK Y Parafoil Aerodynamic Analysis DESIGN POINTS
 % started 25/09/24 - Rosalind Aves
 
-function [aeroParams, pfoilParams] = calcAeroCoeffs(pfoilParams)
+function [aeroParams, pfoilParams] = calcAeroCoeffs(pfoilParams, u)
 % Constants and parameters
 a0 = 0.11*180/pi; % Clark Y lift curve slope (rad^-1)
 alpha_zl = -3 * pi/180; % Zero lift angle of attack (rad)
 
 % Span and line length ratio calculations
-% b = pfoilParams.b; % Span (m)
+b = pfoilParams.b; % Span (m)
 eps = pfoilParams.eps;
 % R = pfoilParams.R;
 AR = pfoilParams.AR;
@@ -97,16 +97,27 @@ C_nbeta_paper2 = -C_Lalpha_paper2 * k1_paper2  * k2_paper2 * (sin(eps) / 8) * al
 C_nalphabeta_paper2 = C_Lalpha_paper2 * k1_paper2 * k2_paper2 * ((sin(3*eps/2))/4);
 
 %% Control derivatives (symmetric deflection control has been assumed)
-bk_by_b_paper2 = 0.25;%ratio of deflected surface width to the span assumed to 0.25 for now
+deltaS = u(1); deltaA = u(2); % control inputs
+deltaL = (2 * deltaS - deltaA) / 2; % left deflection
+deltaR = 2*deltaS - deltaL; % right deflection
+b_r = b/2 * cos(deltaR);
+b_l = b/2 * cos(deltaL);
+b_k = b_r + b_l; % total deflected span 
+
+bk_b = b_k / b; %ratio of deflected surface width to the span assumed to 0.25 for now
  
-eps_k_paper2 = eps * (1 - bk_by_b_paper2);
-del_alpha_zl_paper2 = -11 * pi/180 ;
-lk_paper2 = sqrt(AR * S) * (1 - bk_by_b_paper2)*(sin(eps_k_paper2)/eps_k_paper2);
-del_C_D0del = 0.2; %additional profile drag taken from the paper
-C_Ldelta_s_paper2 = -C_Lalpha_paper2 * del_alpha_zl_paper2 * 2 * bk_by_b_paper2 * cos(eps_k_paper2);
-% C_Ddelta_s_paper2 = (C_Lalpha_paper2^2 * (alpha - alpha_zl - del_alpha_zl)^2/(e*AR*pi) + del_C_D0del) * 2 * bk_by_b;
+eps_k_paper2 = eps * (1 - bk_b);
+del_alpha_zl_paper2 = -11 * pi/180 ; % (CONSTANT)
+lk_paper2 = b/2 * (1 - bk_b)*(sin(eps_k_paper2)/eps_k_paper2);
+if eps_k_paper2 == 0
+    lk_paper2 = 0;
+end
+del_C_D0del = 0.2; % additional profile drag taken from the paper (CONSTANT)
+
+C_Ldelta_s_paper2 = -C_Lalpha_paper2 * del_alpha_zl_paper2 * 2 * bk_b * cos(eps_k_paper2);
+% C_Ddelta_s_paper2 = (C_Lalpha_paper2^2 * (alpha - alpha_zl - del_alpha_zl)^2/(e*AR*pi) + del_C_D0del) * 2 * bk_b;
 C_Ydelta_a_paper2 = C_Ldelta_s_paper2 * sin(eps_k_paper2)/(2*cos(eps_k_paper2));
-C_ldelta_a_paper2 = - C_Ldelta_s_paper2 * cos(eps_k_paper2/2)/cos(eps_k_paper2)*lk_paper2/sqrt(AR * S);
+C_ldelta_a_paper2 = - C_Ldelta_s_paper2/2 * cos(eps_k_paper2/2)/cos(eps_k_paper2)*lk_paper2/b;
 % C_ndelta_a_paper2 = C_Ddelta_s_paper2 * lk/(2*b);
 
 %% put into struct
@@ -139,14 +150,12 @@ aeroParams.Cyr = C_Yr_paper2;
 aeroParams.Cybeta = C_Ybeta_paper2;
 aeroParams.Cyalphar = C_Yralpha_paper2;
 
-aeroParams.bkbyb = bk_by_b_paper2;
+aeroParams.bkb = bk_b;
 aeroParams.epsk = eps_k_paper2;
-aeroParams.delalpha_zl = del_alpha_zl_paper2;
+aeroParams.dalpha_zl = del_alpha_zl_paper2;
 aeroParams.lk = lk_paper2;
-aeroParams.del_C_D0del = del_C_D0del;
+aeroParams.dC_D0del = del_C_D0del;
 aeroParams.CLdeltas = C_Ldelta_s_paper2;
-% aeroparams.CDdeltas= C_Ddelta_s_paper2;
-aeroParams.CYdeltaa = C_Ydelta_a_paper2;
+aeroParams.Cydeltaa = C_Ydelta_a_paper2;
 aeroParams.Cldeltaa = C_ldelta_a_paper2;
-% aeroparams.Cndeltaa = C_ndelta_a_paper2;
 end

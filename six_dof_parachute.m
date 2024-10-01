@@ -22,8 +22,14 @@ p = [x(1); x(2); x(3)]; %X Y Z
 PHI = ([x(4); x(5); x(6)]); %roll pitch yaw
 V = [x(7); x(8); x(9)]; %U V W
 omega = [x(10); x(11); x(12)]; %P Q R
-brake = u(1);
-aileron=u(2);
+
+if (x(3) < 2000) && (x(3) > 1000)
+    deltaS = u(1);
+    deltaA=u(2);
+else
+    deltaS = 0;
+    deltaA = 0;
+end
 
 H=[1 tan(PHI(2))*sin(PHI(1)) tan(PHI(2))*cos(PHI(1)); ...
     0 cos(PHI(1)) -sin(PHI(1)); ...
@@ -46,7 +52,7 @@ DCM = [1 0 0; 0 cos(PHI(1)) sin(PHI(1)); ...
 %     (sin(PHI(1))*sin(PHI(3)) + cos(PHI(1))*sin(PHI(2))*cos(PHI(3))) (-sin(PHI(1))*cos(PHI(3)) + cos(PHI(1))*sin(PHI(2))*sin(PHI(3))) cos(PHI(1))*cos(PHI(2))];
 
 
-v_wind = [10; 0; 0]; % body coordinates
+v_wind = [8; 0; 0]; % body coordinates
 
 V = V - v_wind;
 % if sign(V(2)/V(1)) == -1
@@ -76,6 +82,18 @@ Zcg = 1.2;
 
 rigging_angle = pfoilParams.mu;
 alpha = (atan2(V(3), V(1))) - rigging_angle; % angle of attack 
+
+if V(1) == 0 && V(3) == 0
+    alpha = 0;
+elseif V(1) == 0 % which direction
+    if V(3) > 0
+        alpha = pi/2;
+    elseif V(3) < 0
+        alpha = -pi/2;
+    end
+elseif V(3) == 0
+    alpha = 0;
+end
 
 Vr = norm(V); % resultant velocity
 qbar = 0.5 * rho * Vr^2; % dynamic pressure
@@ -139,19 +157,16 @@ J = J_1 + mass_t * [Zcg^2 0 0; 0 Zcg^2 0; 0 0 0];
 % Aerodynamic Coefficients - Iacomini & Cerimele
 CL_0= aeroParams.CL0; % 0.091;
 CL_alpha= aeroParams.CLalpha; %0.9;
-% CL_brake=0.377;
+CL_deltas = aeroParams.CLdeltas;
 
 CD_0= aeroParams.CD0; %0.25;
 CD_s = aeroParams.CDs;
 % CD_alpha=0.12;
-C_Dl = (pfoilParams.n .* pfoilParams.R .* pfoilParams.d .* cos(alpha).^3) ./ pfoilParams.S;
-% CD_brake_squared=0.266;
-% CD_brake=0.076;
+CD_l = (pfoilParams.n .* pfoilParams.R .* pfoilParams.d .* cos(alpha).^3) ./ pfoilParams.S;
+CD_deltas = ((CL_alpha^2/(aeroParams.e*pfoilParams.AR*pi)) * (alpha - aeroParams.alpha_zl - aeroParams.dalpha_zl)^2 + aeroParams.dC_D0del) * 2 * aeroParams.bkb;
 
 % Cm_o=0.35;
 % Cm_alpha= -0.72;
-% Cm_brake_squared=0.16;
-% Cm_brake=0.056;
 Cm_q = aeroParams.Cmq;
 
 Cn_p = aeroParams.Cnp;
@@ -160,39 +175,44 @@ Cn_beta = aeroParams.Cnbeta;
 % Cn_alphap = aeroParams.Cnalphap; %IGNORING FOR NOW
 % Cn_alphar = aeroParams.Cnalphar; %IGNORING FOR NOW
 % Cn_alphabeta = aeroParams.Cnalphabeta; %IGNORING FOR NOW
-% Cn_aileron= 0.007; %0.05;
+Cn_deltaa = CD_deltas * aeroParams.lk/(2*pfoilParams.b);
 
 Cl_p = aeroParams.Clp;
 % Cl_phi = aeroParams.Clphi; % VALUE IS 0
 Cl_r = aeroParams.Clr;
 Cl_beta = aeroParams.Clbeta;
 % Cl_alphar = aeroParams.Clalphar; %IGNORING FOR NOW
+Cl_deltaa = aeroParams.Cldeltaa;
 
 Cy_p = aeroParams.Cyp;
 Cy_r = aeroParams.Cyr;
 Cy_beta = aeroParams.Cybeta;
 % Cy_alphar = aeroParams.Cyalphar; %IGNORING FOR NOW
-
-%Control derivatives which change with alpha:
-C_Ddelta_s_paper2 = (CL_alpha^2 * (alpha - aeroParams.alpha_zl - aeroParams.delalpha_zl)^2/(aeroParams.e*pfoilParams.AR*pi) + aeroParams.del_C_D0del) * 2 * aeroParams.bkbyb;
-C_ndelta_a_paper2 = C_Ddelta_s_paper2 * aeroParams.lk/(2*sqrt(pfoilParams.AR * pfoilParams.S));
+Cy_deltaa = aeroParams.Cydeltaa;
 
 
 %Coefficient buildup
 
-CL=CL_0 + CL_alpha * alpha; %lift coefficient
+CL=CL_0 + CL_alpha * alpha + CL_deltas * (2*deltaS + abs(deltaA)); %lift coefficient
 
 % CD=CD_o + CD_alpha * alpha + CD_brake_squared * brake^2 + CD_brake * brake;
-CD = CD_0 + CD_s + C_Dl + CL_alpha.^2 .* (alpha*cos(pfoilParams.eps/2) - aeroParams.alpha_zl).^2 / (aeroParams.e*pfoilParams.AR*pi);
+CD = CD_0 + CD_s + CD_l + CL_alpha.^2 .* (alpha*cos(pfoilParams.eps/2) - aeroParams.alpha_zl).^2 / (aeroParams.e*pfoilParams.AR*pi) + CD_deltas*(2*deltaS + abs(deltaA));
 
-CY = Cy_beta * beta + Cy_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cy_r * ((pfoilParams.b*omega(3))/(2*Vr));
+CY = Cy_beta * beta + Cy_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cy_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cy_deltaa * deltaA;
 
 Cm = ((pfoilParams.c*omega(2))/(2*Vr))*Cm_q; % +Cm_o + Cm_alpha * alpha
 
-Cn = Cn_beta * beta + Cn_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cn_r * ((pfoilParams.b*omega(3))/(2*Vr));
+Cn = Cn_beta * beta + Cn_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cn_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cn_deltaa * deltaA;
 % Cn=Cn_r*b/(2*vc) * (omega(3)) + Cn_aileron*aileron;
 
-Cl = Cl_beta * beta + Cl_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cl_r * ((pfoilParams.b*omega(3))/(2*Vr));
+Cl = Cl_beta * beta + Cl_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cl_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cl_deltaa * deltaA;
+
+
+% %% BREAK IF BROKEN
+% if abs(alpha) > deg2rad(15)
+%     warning('Alpha outside 15 degrees');
+% end
+% %%
 
 %Force & Moment buildup
 F=0.5*rho*pfoilParams.S*Vr^2*(CL*[sin(rigging_angle+alpha); 0; -cos(rigging_angle+alpha)] ...
@@ -217,8 +237,8 @@ Fg = mass_t .* DCM * [0; 0; g];
 Fapp = -K_abc * x(7:9) - cross(x(10:12), K_abc * x(7:9));
 
 xdot(7:9) = 1/mass_t*(Faero + Fg + Fapp) - OMEGA * x(7:9);
-% xdot(7:9)=(eye(3) + K_abc / mass)^-1 * ...
-%     ((F / mass) - cross(omega, x(7:9) + mass^-1 * K_abc * x(7:9) + G)); %+g*H_inv(:,3));
+% xdot(7:9)=(eye(3) + K_abc / mass_t)^-1 * ...
+%     ((Faero / mass_t) + DCM * [0; 0; g] - cross(omega, x(7:9) + mass_t^-1 * K_abc * x(7:9))); %+g*H_inv(:,3));
 % [(eye(3) + K abc / mass); alpha V(3) V(1)]
 
 %Kinematic Equations
@@ -229,15 +249,16 @@ xdot(4:6)= H * x(10:12);
 %.* omega)+cross(V,V.*[mass+A;mass+B;mass+C]));
 % xdot(10:12)=(J + K Iabc)^-1 * (M - OMEGA * J * omega);
 
-Mapp = -K_Iabc * x(10:12) - cross(x(4:6), K_Iabc * x(4:6)) - cross(x(7:9), K_abc * x(7:9));
-Maero = 0.5 * rho * Vr^2 * pfoilParams.S .* [pfoilParams.b*Cl; pfoilParams.c*Cm; pfoilParams.b*Cn];
-Mg = [-mass_t*g*Zcg*sin(x(5))*cos(x(4)); -mass_t*g*Zcg*sin(x(4)); 0];
+Mapp = -K_Iabc * x(10:12) - cross(x(4:6), K_Iabc * x(4:6)) - cross(x(7:9), K_abc * x(7:9))
+Maero = 0.5 * rho * Vr^2 * pfoilParams.S .* [pfoilParams.b*Cl; pfoilParams.c*Cm; pfoilParams.b*Cn]
+Mg = [-mass_t*g*Zcg*sin(x(5))*cos(x(4)); -mass_t*g*Zcg*sin(x(4)); 0]
 Msum = Mapp + Maero + Mg;
 
 xdot(10:12) = J^-1 * (Mapp + Maero + Mg - cross(omega, J*omega));
+
 % xdot(10:12) = (J + K_Iabc)^-1 * ...
-%     (M - cross(omega, K_Iabc * omega) - ...
-%     cross(V,K_abc * V) - cross(omega, J*omega)) %OMEGA * J * omega); %
+%     (Maero - cross(omega, K_Iabc * omega) - ...
+%     cross(x(7:9),K_abc * x(7:9)) - cross(omega, J*omega)); %OMEGA * J * omega); %
 
 xdot = xdot';
 end

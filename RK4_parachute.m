@@ -8,8 +8,16 @@ g = 9.81; % m/s
 
 [pfoilParams.b, pfoilParams.c, pfoilParams.S, pfoilParams.AR, pfoilParams.t, pfoilParams.mu, pfoilParams.eps, pfoilParams.a, pfoilParams.R, pfoilParams.d, pfoilParams.n, pfoilParams.m_s, pfoilParams.m_p, pfoilParams.A_cube] = calcPfoilGeometry();
 
-[aeroParams] = calcAeroCoeffs(pfoilParams);
+dx = 0.001; % pull lines 10cm
 
+deltaR = atan(2*dx / pfoilParams.b); % right line deflection angle
+deltaL = -deltaR; % left line deflection angle
+deltaA = deltaR - deltaL; % asymmetric deflection angle
+deltaS = (deltaR + deltaL)/2; % symmetric deflection angle
+
+u = [deltaS deltaA]; % control input
+
+[aeroParams] = calcAeroCoeffs(pfoilParams, u);
 
 %%
 
@@ -30,8 +38,11 @@ g = 9.81; % m/s
 % end
 %
 % disp = 0;
+
+
+
 opts = odeset('Events',@iHitTheGround, 'OutputFcn',@odeplot);
-[t,x] = ode45(@(t,x) six_dof_parachute(x, [0 0], aeroParams, pfoilParams, g), [0 end_time], [0; 0; 3000; 0; 0; 0; 0; 0; 45; 0; 0; 0], opts);
+[t,x] = ode45(@(t,x) six_dof_parachute(x, u, aeroParams, pfoilParams, g), [0 end_time], [0; 0; 3000; 0; 0; 0; 0; 0; 45; 0; 0; 0], opts);
 
 function [value, isterminal, direction] = iHitTheGround(t,x)
 value = x(3);
@@ -131,9 +142,25 @@ phi = x(:,4);
 theta = x(:,5);
 psi = x(:,6);
 
-U = x(:,7);
-V = x(:,8);
-W = x(:,9);
+for i = 1:size(x,1)
+DCM= [1 0 0; 0 cos(phi(i)) sin(phi(i)); ...
+    0 -sin(phi(i)) cos(phi(i))] * ...
+    [cos(theta(i)) 0 -sin(theta(i)); 0 1 0; ...
+    sin(theta(i)) 0 cos(theta(i))] * ...
+    [cos(psi(i)) sin(psi(i)) 0; ...
+    -sin(psi(i)) cos(psi(i)) 0; 0 0 1];
+
+
+
+velocityI(i,1:3) = DCM' * [x(i,7); x(i,8); x(i,9)];
+
+
+end
+U = velocityI(:,1);
+V = velocityI(:,2);
+W = velocityI(:,3);
+% V = x(:,8);
+% W = x(:,9);
 
 P = x(:,10);
 Q = x(:,11);
@@ -166,3 +193,6 @@ subplot(3,1,3)
 plot(t, sqrt(U.^2 + V.^2 + W.^2));
 title("Vmag vs time");
 xlabel('time'); ylabel('Vmag');
+
+
+figure(); plot(t, x(:, 10)); hold on; plot(t, x(:, 11)); plot(t, x(:, 12));

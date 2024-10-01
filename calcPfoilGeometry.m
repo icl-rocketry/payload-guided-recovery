@@ -1,7 +1,7 @@
 % Parafoil geometry
 % started 26/09/24 - Rosalind Aves
 
-function [b, c, S, AR, t, mu, eps, a, R, d, n, m_s, m_p, A_cube] = calcPfoilGeometry()
+function [b, c, S, AR, t, mu, eps, a, R, d, n, m_s, m_p, A_cube, b_inf] = calcPfoilGeometry()
 
 b = 1.267; %wing span
 c = (0.192 + 0.55)/2; %wing chord
@@ -16,7 +16,7 @@ mu = deg2rad(10); % rigging angle in radians (imposed incidence by line lengths)
 d = 1.5e-3; % Line diameter (m)
 n = 24;
 m_p = 0.2;
-m_v = 30;
+m_v = 3;
 m_s = m_p + m_v;
 A_cube = sqrt(0.3^2 + 0.1^2)*0.1; % Cubesat area (m^2)
 
@@ -42,4 +42,10 @@ eps7root = acos((bridle7^2 + maxRadius^2 - (cellLength/2)^2) / (2*bridle7*maxRad
 eps = sum([eps13 eps35 eps57 eps7root]);
 
 a = b/2 * (1-cos(eps)) / eps; % distance from parafoil tip to root (height) in m
+
+
+v_vol = 0.09 * c^2 * b;
+b_inf = 2 * R * sin(eps);
+h_mean = v_vol / (c * b_inf);
+
 end

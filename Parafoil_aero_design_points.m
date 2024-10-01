@@ -28,7 +28,7 @@ rho = 1.225; % Air density (kg/m^3)
 
 %% C_L coefficients !!
 tau = 0.108;
-a0_dash = (2 * pi .* AR) .* tanh(a0 ./ (2 * pi .* AR));
+a0_dash = (pi .* AR) .* tanh(a0 ./ (pi .* AR));
 C_Lalpha_paper1 = (pi .* AR .* a0_dash) ./ (pi .* AR + a0_dash .* (1 + tau)); % FOR AIRFOIL
 C_L2alpha_paper1 = C_Lalpha_paper1.* cos(beta).^2; % FOR PARAFOIL per rad
 
