@@ -2,7 +2,7 @@
 % started 25/09/24 - Rosalind Aves
 
 % Constants and parameters
-a0 = 0.11*180/pi; % Clark Y lift curve slope (rad^-1)
+a0 = 0.06*180/pi; % Clark Y lift curve slope (rad^-1)
 alpha_zl = -3 * pi/180; % Zero lift angle of attack (rad)
 alpha = [-3:0.05:10] .* pi/180; % rad
 % Aspect Ratios
@@ -14,7 +14,7 @@ controlLengthWT = 0.365; % line length for maxRadius (function of)
 
 [eps, Pheight, R] = calcEpsilon(b, controlLengthWT);
 
-beta = b ./ (4 .* R);
+beta = eps/2; % b ./ (4 .* R);
 
 % Surface area and chord length calculations
 S = b^2 ./ AR;
@@ -27,7 +27,7 @@ A_cube = sqrt(0.3^2 + 0.1^2)*0.1; % Cubesat area (m^2)
 rho = 1.225; % Air density (kg/m^3)
 
 %% C_L coefficients !!
-tau = 0.108;
+tau = 0.0;
 a0_dash = (pi .* AR) .* tanh(a0 ./ (pi .* AR));
 C_Lalpha_paper1 = (pi .* AR .* a0_dash) ./ (pi .* AR + a0_dash .* (1 + tau)); % FOR AIRFOIL
 C_L2alpha_paper1 = C_Lalpha_paper1.* cos(beta).^2; % FOR PARAFOIL per rad
@@ -51,7 +51,7 @@ C_D0_paper1 = 0.015 + 0.004 + 0.5 * 0.117 + 0.0001;
 C_D_paper1 = C_D0_paper1 + ((C_Lalpha_paper1 * (alpha - alpha_zl)).^2 .* (1 + delta)) ./ (pi * AR);
 
 C_Dl = (n .* R .* d .* cos(alpha).^3) ./ S;
-C_Ds = A_cube/ S;
+C_Ds = 1.05*A_cube/ S;
 
 C_D_paper1 = C_D_paper1 + C_Dl + C_Ds; % ADDING LINE AND STORE DRAG
 C_D_paper2 = C_D0_paper1 + C_Ds + C_Dl + C_Lalpha_paper2.^2 .* (alpha*cos(eps/2) - alpha_zl).^2 / (e*AR*pi); %ADD TO 6DOF

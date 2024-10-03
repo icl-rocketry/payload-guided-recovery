@@ -38,6 +38,7 @@ H_inv = H^-1;
 
 %skew symm cross product matrix
 OMEGA = [ 0 -x(12) x(11); x(12) 0 -x(10); -x(11) x(10) 0];
+Vair = [0 -x(9) x(8); x(9) 0 -x(7); -x(8) x(7) 0];
 
 %direction cosine matrix
 DCM = [1 0 0; 0 cos(PHI(1)) sin(PHI(1)); ...
@@ -52,7 +53,7 @@ DCM = [1 0 0; 0 cos(PHI(1)) sin(PHI(1)); ...
 %     (sin(PHI(1))*sin(PHI(3)) + cos(PHI(1))*sin(PHI(2))*cos(PHI(3))) (-sin(PHI(1))*cos(PHI(3)) + cos(PHI(1))*sin(PHI(2))*sin(PHI(3))) cos(PHI(1))*cos(PHI(2))];
 
 
-v_wind = [8; 0; 0]; % body coordinates
+v_wind = [0; 0; 0]; % body coordinates
 
 V = V - v_wind;
 % if sign(V(2)/V(1)) == -1
@@ -116,7 +117,7 @@ abar = pfoilParams.a / pfoilParams.b;
 tbar = pfoilParams.t / pfoilParams.c;
 
 A = 0.666 * rho * (1+8/3*abar^2) * pfoilParams.t^2*pfoilParams.b;
-B = 0.267 * rho * (1 + 2*abar^2 / tbar^2 * pfoilParams.AR * (1-tbar^2)) * pfoilParams.t^2 * pfoilParams.c;
+B = 0.267 * rho * (1 + 2*abar^2 / tbar^2 * pfoilParams.AR^2 * (1-tbar^2)) * pfoilParams.t^2 * pfoilParams.c;
 C = 0.785 * rho * sqrt(1 + 2*abar^2 * (1-tbar^2)) * pfoilParams.AR / (1 + pfoilParams.AR) * pfoilParams.c^2 * pfoilParams.b;
 
 I_A = 0.055 * rho * pfoilParams.AR / (1 + pfoilParams.AR) * pfoilParams.c^2 * pfoilParams.b^3;
@@ -193,19 +194,19 @@ Cy_deltaa = aeroParams.Cydeltaa;
 
 %Coefficient buildup
 
-CL=CL_0 + CL_alpha * alpha + CL_deltas * (2*deltaS + abs(deltaA)); %lift coefficient
+CL=CL_0 + CL_alpha * alpha + CL_deltas * (2*deltaS + abs(deltaA)) %lift coefficient
 
 % CD=CD_o + CD_alpha * alpha + CD_brake_squared * brake^2 + CD_brake * brake;
-CD = CD_0 + CD_s + CD_l + CL_alpha.^2 .* (alpha*cos(pfoilParams.eps/2) - aeroParams.alpha_zl).^2 / (aeroParams.e*pfoilParams.AR*pi) + CD_deltas*(2*deltaS + abs(deltaA));
+CD = CD_0 + CD_s + CD_l + CL_alpha.^2 .* (alpha*cos(pfoilParams.eps/2) - aeroParams.alpha_zl).^2 / (aeroParams.e*pfoilParams.AR*pi) + CD_deltas*(2*deltaS + abs(deltaA))
 
-CY = Cy_beta * beta + Cy_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cy_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cy_deltaa * deltaA;
+CY = Cy_beta * beta + Cy_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cy_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cy_deltaa * deltaA
 
-Cm = ((pfoilParams.c*omega(2))/(2*Vr))*Cm_q; % +Cm_o + Cm_alpha * alpha
+Cm = ((pfoilParams.c*omega(2))/(2*Vr))*Cm_q % +Cm_o + Cm_alpha * alpha
 
-Cn = Cn_beta * beta + Cn_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cn_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cn_deltaa * deltaA;
+Cn = Cn_beta * beta + Cn_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cn_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cn_deltaa * deltaA
 % Cn=Cn_r*b/(2*vc) * (omega(3)) + Cn_aileron*aileron;
 
-Cl = Cl_beta * beta + Cl_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cl_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cl_deltaa * deltaA;
+Cl = Cl_beta * beta + Cl_p * ((pfoilParams.b*omega(1))/(2*Vr)) + Cl_r * ((pfoilParams.b*omega(3))/(2*Vr)) + Cl_deltaa * deltaA
 
 
 % %% BREAK IF BROKEN
@@ -237,9 +238,10 @@ Fg = mass_t .* DCM * [0; 0; g];
 Fapp = -K_abc * x(7:9) - cross(x(10:12), K_abc * x(7:9));
 
 xdot(7:9) = 1/mass_t*(Faero + Fg + Fapp) - OMEGA * x(7:9);
-% xdot(7:9)=(eye(3) + K_abc / mass_t)^-1 * ...
-%     ((Faero / mass_t) + DCM * [0; 0; g] - cross(omega, x(7:9) + mass_t^-1 * K_abc * x(7:9))); %+g*H_inv(:,3));
-% [(eye(3) + K abc / mass); alpha V(3) V(1)]
+
+xdot(7:9)=(eye(3) + K_abc / mass_t)^-1 * ...
+    ((Faero / mass_t) + DCM * [0; 0; g] - cross(omega, x(7:9) + mass_t^-1 * K_abc * x(7:9))); %+g*H_inv(:,3));
+
 
 %Kinematic Equations
 xdot(4:6)= H * x(10:12);
@@ -250,6 +252,7 @@ xdot(4:6)= H * x(10:12);
 % xdot(10:12)=(J + K Iabc)^-1 * (M - OMEGA * J * omega);
 
 Mapp = -K_Iabc * x(10:12) - cross(x(4:6), K_Iabc * x(4:6)) - cross(x(7:9), K_abc * x(7:9))
+Mapp2 = -[I_A 0 0; 0 I_B 0; 0 0 I_C] * x(10:12) - OMEGA *  [I_A 0 0; 0 I_B 0; 0 0 I_C] * x(4:6) - Vair* [A 0 0; 0 B 0; 0 0 C] * x(7:9)
 Maero = 0.5 * rho * Vr^2 * pfoilParams.S .* [pfoilParams.b*Cl; pfoilParams.c*Cm; pfoilParams.b*Cn]
 Mg = [-mass_t*g*Zcg*sin(x(5))*cos(x(4)); -mass_t*g*Zcg*sin(x(4)); 0]
 Msum = Mapp + Maero + Mg;

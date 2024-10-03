@@ -3,7 +3,7 @@
 
 function [aeroParams, pfoilParams] = calcAeroCoeffs(pfoilParams, u)
 % Constants and parameters
-a0 = 0.11*180/pi; % Clark Y lift curve slope (rad^-1)
+a0 = 0.06*180/pi; % Clark Y lift curve slope (rad^-1)
 alpha_zl = -3 * pi/180; % Zero lift angle of attack (rad)
 
 % Span and line length ratio calculations
@@ -19,7 +19,7 @@ A_cube = pfoilParams.A_cube;
 % beta = b ./ (4 .* R);
 
 %% C_L coefficients !!
-% tau = 0.108;
+% tau = 0.0; % for elliptical planforms
 % a0_dash = (2 * pi .* AR) .* tanh(a0 ./ (2 * pi .* AR));
 % C_Lalpha_paper1 = (pi .* AR .* a0_dash) ./ (pi .* AR + a0_dash .* (1 + tau)); % FOR AIRFOIL
 % C_L2alpha_paper1 = C_Lalpha_paper1.* cos(beta).^2; % FOR PARAFOIL per rad
