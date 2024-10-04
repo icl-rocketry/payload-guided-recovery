@@ -1,7 +1,7 @@
 % Parafoil geometry
 % started 26/09/24 - Rosalind Aves
 
-function [b, c, S, AR, t, mu, eps, a, R, d, n, m_s, m_p, A_cube, b_inf] = calcPfoilGeometry()
+function [b, c, S, AR, t, mu, eps, a, R, d, n, m_s, m_p, A_cube, b_inf, controlLengthWT] = calcPfoilGeometry()
 
 b = 1.267; %wing span
 c = (0.192 + 0.55)/2; %wing chord
@@ -55,5 +55,4 @@ a = 0.4;
 v_vol = 0.09 * c^2 * b;
 b_inf = 2 * R * sin(eps);
 h_mean = v_vol / (c * b_inf);
-
 end

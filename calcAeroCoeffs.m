@@ -39,7 +39,7 @@ C_L0_paper2 = C_Lalpha_paper2.*(0 .*cos(eps/2)-alpha_zl).*cos(eps/2);
 %% C_D coefficients !! - no derivatives just pure CD
 
 % delta = [0.023]; 
-e = 0.9;
+e = 0.7;
 C_D0_paper1 = 0.015 + 0.004 + 0.5 * 0.117 + 0.0001;
 % C_D_paper1 = C_D0_paper1 + ((C_Lalpha_paper1 * (alpha - alpha_zl)).^2 .* (1 + delta)) ./ (pi * AR);
 

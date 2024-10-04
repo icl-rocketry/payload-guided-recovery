@@ -3,4 +3,4 @@
 
 dxR = 0; dxL = 0; % Do not pull lines
 
-pfoilParams.eps = deg2rad(40); % anhedral angle
+% pfoilParams.eps = deg2rad(20); % anhedral angle
