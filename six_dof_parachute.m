@@ -46,7 +46,6 @@ m_pay = pfoilParams.m_s - pfoilParams.m_p;
 m_p = pfoilParams.m_p;
 m = (m_p+m_pay);
 mu = pfoilParams.mu;
-
 rho = atmos(Z, 4); %density of air (function of height)
 S = pfoilParams.S;
 b = pfoilParams.b;
@@ -62,6 +61,32 @@ R_BN = [cos(psi)*cos(theta) sin(psi)*cos(theta) -sin(theta); ...
 
 R_PB = [cos(mu) 0 -sin(mu); 0 1 0; sin(mu) 0 cos(mu)];
 
+% Skew symmetric matrices
+S_omega = [ 0 -r q; r 0 -p; -q p 0];
+
+v_vol = 0.09 * c^2 * b;
+b_inflated = 2 * R * sin(eps);
+h_mean = v_vol / (c * b_inflated);
+
+t_mean = v_vol / S;
+l_s = 0.3; z_b = 0.3;
+l_ha = l_cont+R;
+l_cgp = 2/3 * ((l_s + t_mean)^3 - l_s^3) / ((l_s + t_mean)^2 - l_s^2) * sin(eps) / eps;
+l_z = z_b/2 + l_ha + l_cgp;
+
+z_bs = l_z * (m_p + v_vol*rho) / (m_p + m_p);
+z_bm = z_bs - l_z;
+Rbs = [0; 0; z_bs];
+% Rbm = [0 0 -(l_cont+R)*cos(eps)];
+Rbm = R_PB' * [0; 0; z_bm];
+S_rbm = [0 -Rbm(3) Rbm(2); ...
+         Rbm(3) 0 -Rbm(1); ...
+         -Rbm(2) Rbm(1) 0];
+S_rbs = [0 -Rbs(3) Rbs(2); ...
+         Rbs(3) 0 -Rbs(1); ...
+         -Rbs(2) Rbs(1) 0];
+me = v_vol * rho;
+
 % wind - inertial
 W = [0; 0; 0];
 
@@ -72,16 +97,24 @@ V = [u; v; w];
 Va = V - R_BN*W;
 
 % canopy velocity
-Vp = R_PB' * V; %R_PB*R_BN'*V
+Vp = R_PB * V; %R_PB*R_BN'*V
+% Vp = R_PB' * (V + S_omega*Rbm - R_BN*W);
+% R_PB or R_PB' ?
 
 % relative airspeed velocity in canopy frame
-Vap = R_PB' * Va;
+Vap = R_PB * Va;
+% Vap = norm(Vp);
+% R_PB or R_PB' ?
+
+% payload velocity
+% Vs = V + S_omega*Rbs - R_BN*W;
+% Vas = norm(Vs);
 
 % local angle of attack
-alpha = atan(Vp(3) / Vp(1)); % should be in canopy frame (* R_PB*R_BN'*V ?)
+alpha = atan(abs(Va(3) / Va(1))); % should be in canopy frame (* R_PB*R_BN'*V ?)
 
 % local sideslip angle
-beta = atan(Vp(2) / sqrt(Vp(1)^2 + Vp(3)^2));
+beta = atan(Va(2) / sqrt(Va(1)^2 + Va(3)^2));
 
 % flight path angle
 gamma = asin(Va(3) / norm(Va));
@@ -96,17 +129,23 @@ Ix_pay = m_pay/12 * (0.1^2 + 0.3^2);
 Iy_pay = m_pay/12 * (0.1^2 + 0.3^2);
 Iz_pay = m_pay/12 * (0.1^2 + 0.1^2);
 
-v_vol = 0.09 * pfoilParams.c^2 * pfoilParams.b;
-% b_inf = 2 * pfoilParams.R * sin(pfoilParams.eps);
-h_mean = v_vol / (pfoilParams.c * b);
+I_pay = [Ix_pay 0 0; 0 Iy_pay 0; 0 0 Iz_pay]; % in body frame
 
-Ix_p = (v_vol * rho + m_p)/12 * (b^2 + h_mean^2);
+Ix_p = (v_vol * rho + m_p)/12 * (b_inflated^2 + h_mean^2);
 Iy_p = (v_vol * rho + m_p)/12 * (c^2 + h_mean^2);
-Iz_p = (v_vol * rho + m_p)/12 * (b^2 + c^2);
+Iz_p = (v_vol * rho + m_p)/12 * (b_inflated^2 + c^2);
 
-I = [Ix_p*cos(mu)^2+Iz_p*sin(mu)^2 0 0.5*(Iz_p - Ix_p)*sin(2*mu); ...
+I_p = [Ix_p*cos(mu)^2+Iz_p*sin(mu)^2 0 0.5*(Ix_p - Iz_p)*sin(2*mu); ...
      0 Iy_p 0; ...
-     0.5*(Iz_p - Ix_p)*sin(2*mu) 0 Ix_p*cos(mu)^2+Iz_p*sin(mu)^2];
+     0.5*(Ix_p - Iz_p)*sin(2*mu) 0 Ix_p*sin(mu)^2+Iz_p*cos(mu)^2];
+
+Ix = I_p(1,1) + I_pay(1,1) + (m_p + rho * v_vol) * z_bm^2 + m_pay*z_bs^2;
+Iy = I_p(2,2) + I_pay(2,2) + (m_p + rho * v_vol) * z_bm^2 + m_pay*z_bs^2;
+Iz = I_p(3,3) + I_pay(3,3);
+Ixz = I_p(1,3);
+
+I = [Ix 0 Ixz; 0 Iy 0; Ixz 0 Iz];
+
 
 % apparent masses and inertias
 abar = pfoilParams.a / b;
@@ -121,17 +160,10 @@ I_B = 0.0308 * rho * AR / (1 + AR) * (1 + (pi/6) * (1 + AR) * AR * abar^2 * tbar
 I_C = 0.0555 * rho * (1+8*abar^2) * pfoilParams.t^2 * b^3;
 
 I_am = [A 0 0; 0 B 0; 0 0 C];
-% K_abc = eye(3); % AS LESS THAN 1, SO FLOATS
 I_ai = [I_A 0 0; 0 I_B 0; 0 0 I_C];
-% K_Iabc = eye(3); % AS LESS THAN 1, SO FLOATS
 
 I_am_star = R_PB' * I_am * R_PB;
 I_ai_star = R_PB' * I_ai * R_PB;
-
-
-M_BA = [cos(mu + alpha) 0 -sin(mu + alpha); ...
-        0 1 0; ...
-        sin(mu + alpha) 0 cos(mu + alpha)];
 
 % Aerodynamic and control coefficients
 CL_0= aeroParams.CL0;
@@ -167,9 +199,10 @@ Cy_deltaa = aeroParams.Cydeltaa;
 
 
 %Coefficient buildup
-CL=CL_0 + CL_alpha * alpha + CL_deltas * (2*deltaS + abs(deltaA)); %lift coefficient
+CL = CL_0 + CL_alpha * alpha + CL_deltas * (2*deltaS + abs(deltaA)); %lift coefficient
 
 CD = CD_0 + CD_s + CD_l + CL_alpha.^2 .* (alpha*cos(eps/2) - aeroParams.alpha_zl).^2 / (aeroParams.e*AR*pi) + CD_deltas*(2*deltaS + abs(deltaA));
+CDs = CD_s + CD_l;
 
 CY = Cy_beta * beta + Cy_p * ((b*p)/(2*norm(Vap))) + Cy_r * ((b*r)/(2*norm(Vap))) + Cy_deltaa * deltaA;
 
@@ -179,40 +212,38 @@ Cn = Cn_beta * beta + Cn_p * ((b*p)/(2*norm(Vap))) + Cn_r * ((b*r)/(2*norm(Vap))
 
 Cl = Cl_beta * beta + Cl_p * ((b*p)/(2*norm(Vap))) + Cl_r * ((b*r)/(2*norm(Vap))) + Cl_deltaa * deltaA;
 
+R_PW = [cos(alpha) 0 -sin(alpha); 0 1 0; sin(alpha) 0 cos(alpha)] * [cos(beta) sin(beta) 0; -sin(beta) cos(beta) 0; 0 0 1];
 
 % Forces
 Q = 0.5 * rho * norm(Va)^2;
-Fg = m * g * [-sin(theta); cos(theta)*sin(phi); cos(theta)*cos(phi)];
-Fa = -Q * S * R_WB' * [CD; CY; CL];
+Fg = (m+me) * g * [-sin(theta); cos(theta)*sin(phi); cos(theta)*cos(phi)];
+Fap = -Q * S * R_WB' * [CD; CY; CL];
+% Fas = 0.5 * rho * Vas^2 * 0.1^2 * R_WB'* [-CDs; 0; 0];
+% Fbp = -me * [-sin(theta); cos(theta)*sin(phi); cos(theta)*cos(phi)]; % buoyancy force
+
 
 % Moments
 Ma = Q * S * [b * Cl; c * Cm; b * Cn];
-
-% Skew symmetric matrices
-S_omega = [ 0 -r q; r 0 -p; -q p 0];
-Rbm = [0 0 -(l_cont+R)*cos(eps)];
-S_rbm = [0 -Rbm(3) 0; ...
-         Rbm(3) 0 0; ...
-         0 0 0];
+% Mbp = S_rbm * Fbp; % buoyancy moment
 
 I_3x3 = eye(3);
 
 
 % SOLVE
-me = v_vol * rho;
 
-A = [(m + me)*I+I_am_star -I_am_star*S_rbm; ...
-      S_rbm*I_am_star (I+I_ai_star-S_rbm'*I_am_star*S_rbm)]; % should A(4) have transpose
+A = [((m + me)*I_3x3+I_am_star) (-I_am_star*S_rbm); ...
+      (S_rbm*I_am_star) (I+I_ai_star-S_rbm*I_am_star*S_rbm)]; % should A(4) have transpose
 
 % deter = (((m + me)*I+I_am_star)*(I+I_ai_star-S_rbm*I_am_star*S_rbm) - (-I_am_star*S_rbm)*(S_rbm*I_am_star))^-1;
 
-
-B = [Fa + Fg - S_omega*((m+me)*I_3x3+I_am_star)*[u; v; w] + S_omega*I_am_star*S_rbm*[p; q; r] + S_omega*I_am_star*R_BN*W; ...
-     Ma - (S_omega*(I+I_ai_star) - S_rbm*S_omega*I_am_star*S_rbm)*[p; q; r] - S_rbm*S_omega*I_am_star*[u; v; w] + S_rbm*S_omega*I_am_star*R_BN*W];
-
+% F = Fap + Fas + Fg + Fbp - (m+me)*S_omega*[u; v; w] - S_omega*I_am_star*([u; v; w] -S_rbm*[p; q; r]) + S_omega*I_am_star*R_BN*W;
+% M = Ma + Mbp - S_omega*I*[p; q; r] - S_omega*I_ai_star*[p; q; r] - S_rbm*S_omega*I_am_star*([u; v; w] - S_rbm*[p; q; r] - R_BN*W); % + S_rbm*Fap + S_rbs*Fas
+B = [Fap + Fg - S_omega*(m+me)*I_3x3*[u; v; w] - S_omega*I_am_star*[u; v; w] + S_omega*I_am_star*S_rbm*[p; q; r] + S_omega*I_am_star*R_BN*W; ...
+     Ma - S_omega*I*[p; q; r] - S_omega*I_ai_star*[p; q; r] - S_rbm*S_omega*I_am_star*([u; v; w] - S_rbm*[p; q; r] - R_BN*W)];
+% B = [F; M];
 omegaDOT = A\B; % [udot vdot wdot pdot qdot rdot]'
 
-xdot(1:3) = [1 0 0; 0 1 0; 0 0 -1]* R_BN' * [u; v; w]; % navigation equations (translational)
+xdot(1:3) = [1 0 0; 0 1 0; 0 0 -1] * R_BN' * V; % navigation equations (translational) 
 xdot(4:6) = [1 sin(phi)*tan(theta) cos(phi)*tan(theta); ...
              0 cos(phi) -sin(phi); ...
              0 sin(phi)/cos(theta) cos(phi)/cos(theta)] * [p; q; r]; % kinematic equations (rotational)

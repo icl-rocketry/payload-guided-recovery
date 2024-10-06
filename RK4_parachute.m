@@ -25,28 +25,8 @@ u = [deltaS deltaA]; % control input
 
 %%
 
-% u=cell(1,num_of_steps);
-% x=cell(1,num_of_steps);
-%
-% x{1} = [0; 0; 3000; 0; 0; 0; 0; 0; 2; 0; 0; 0];
-%
-% for count = 1:num_of_steps
-%     u{count} = zeros(2,1);
-%     % if count * T > 14 && count * T < 14.5
-%     % u{count} = [0; 0.2];
-%     % end
-%
-%     % if count * T > 3 && count * T < 4
-%     % u{count} = [0.75; 0];
-%     % end
-% end
-%
-% disp = 0;
-
-% t_2 = [0:10:100];
-
 opts = odeset('Events',@iHitTheGround, 'OutputFcn',@odeplot);
-[t,x] = ode23s(@(t,x) six_dof_parachute(x, u, aeroParams, pfoilParams, g), [0 end_time], [0; 0; 3000; 0; 0; 0; 15; 0; 45; 0; 0; 0], opts);
+[t,x] = ode23s(@(t,x) six_dof_parachute(x, u, aeroParams, pfoilParams, g), [0 end_time], [0; 0; 3000; 0; 0; 0; 0; 0; 45; 0; 0; 0], opts);
 
 function [value, isterminal, direction] = iHitTheGround(t,x)
 value = x(3);
