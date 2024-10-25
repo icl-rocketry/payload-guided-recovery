@@ -1,4 +1,4 @@
-% 3 DOF from JPL DARTS 
+% 3 DOF from DARTS 
 % started 06/10/24 - Rosalind Aves
 
 function xdot = three_dof_parachute(x, delta, W0, aeroParams, pfoilParams, g)
@@ -10,12 +10,18 @@ X = x(4);
 Y = x(5);
 Z = x(6);
 
-if (abs(Z) < 2568) && (abs(Z) > 2361)
+% if (abs(Z) < 2825) % pretied
+%     deltaA = -delta(2);
+% else
+%     deltaA = 0;
+% end
+
+if (abs(Z) < 2491) && (abs(Z) > 2357) % 50 sec actuation
     deltaA = delta(2);
-elseif (abs(Z) < 2361) && (abs(Z) > 2200)
+elseif (abs(Z) < 2357) && (abs(Z) > 2241) % 20 sec hold neutral
     deltaA = 0;
-elseif (abs(Z) < 2275)
-    deltaA = delta(2);
+elseif (abs(Z) < 2241) % rest of flight actuation
+    deltaA = -delta(2);
 else
     deltaA = 0;
 end

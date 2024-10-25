@@ -8,29 +8,30 @@ num_of_steps = floor(end_time / T);
 g = 9.81; % m/s
 
 [pfoilParams.b, pfoilParams.c, pfoilParams.S, pfoilParams.AR, pfoilParams.t, pfoilParams.mu, pfoilParams.eps, pfoilParams.a, pfoilParams.R, pfoilParams.d, pfoilParams.n, pfoilParams.m_s, pfoilParams.m_p, pfoilParams.A_cube, ~, pfoilParams.l_cont] = calcPfoilGeometry();
-
+% for i = 1:10
 run NoControl.m  % test with no line actuation
 % run OneControl.m % test with actuating one control line
-run TwoControl.m % test with actuating both control lines symmetrically
-
+% run TwoControl.m % test with actuating both control lines symmetrically
+% dxL = -0.0316; % Let out left line 1cm
+% dxR = 0.0316;
 
 deltaR = atan(2*dxR / pfoilParams.b); % right line deflection angle
 deltaL = atan(2*dxL / pfoilParams.b); % left line deflection angle
 deltaA = deltaR - deltaL; % asymmetric deflection angle
 deltaS = (deltaR + deltaL)/2; % symmetric deflection angle
 
+% end
 u = [deltaS, deltaA]; % control input
 
 [aeroParams] = calcAeroCoeffs(pfoilParams, u);
 
-% aeroParams.CLalpha = 2.56;
 
 %%
 
 %initial conditions
 vel0 = [7.72; 7.87; 50]; % initial ground speed vector
 NED0 = [1100; 727; -2625];
-W0 = [6.3; 6.3; 0]; % initial wind
+W0 = [6.1518; 6.1518; 0]; % initial wind 6.1518
 Psi = 0; 
 phi = 0; % no initial control
 gamma0 = atan(-vel0(3) / vel0(1)); % flight path angle
@@ -48,6 +49,12 @@ opts = odeset('Events',@iHitTheGround, 'OutputFcn',@odeplot);
 [t,x] = ode15s(@(t,x) three_dof_parachute(x, u, W0, aeroParams, pfoilParams, g), [0 end_time], [Va0; gamma0; Psi; 0; 0; NED0(3)], opts);
 
 function [value, isterminal, direction] = iHitTheGround(t,x)
+value = x(6);
+isterminal = 1;
+direction = 0;
+end
+
+function [value, isterminal, direction] = cutScript(t,x)
 value = x(6);
 isterminal = 1;
 direction = 0;
@@ -128,4 +135,9 @@ xlabel('N'); ylabel('E'); zlabel('D');
 
 %% Drift
 
-max_drift = mean([max(X) max(Y)]);
+max_drift_pay = mean([max(X) max(Y)]);
+rocket_drift = 1000;
+
+drift = rocket_drift + max_drift_pay;
+
+% U_pretie = U; W_pretie = W; X_pretie = X; Y_pretie = Y; Z_pretie = Z; drift_pretie = drift; save('drift_pretie.mat', 'X_pretie', 'Y_pretie', 'Z_pretie', 'drift_pretie', 'U_pretie', 'W_pretie');

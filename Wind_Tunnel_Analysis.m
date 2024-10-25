@@ -17,7 +17,7 @@ F_L = 0.5 .* rho .* S .* C_L .* V.^2;
 
 gamma = atan(C_D ./ C_L);
 
-W = 3.2 * 9.81;
+W = 2.4 * 9.81;
 
 V_wt = sqrt(W./(0.5 .* C_N .* S .* rho));
 w_wt = V_wt .* sin(alpha + mu);
@@ -40,7 +40,7 @@ u_mach_3 = V_mach_3 * cos(gamma_mach);
 
 %% drift and wind
 
-Uwind = 8.9; % max u velocity
+Uwind = 8.7; % max u velocity
 
 time_mach_3 = 3000/w_mach_3;
 drift_mach_3 = u_mach_3 * time_mach_3;
