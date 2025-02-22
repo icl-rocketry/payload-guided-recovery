@@ -25,7 +25,10 @@ u = [deltaS, deltaA]; % control input
 
 [aeroParams] = calcAeroCoeffs(pfoilParams, u);
 
-
+A = struct2cell(pfoilParams);
+pfoilList = cat(2,A{:});
+A = struct2cell(aeroParams);
+aeroList = cat(2,A{:});
 %%
 
 %initial conditions
